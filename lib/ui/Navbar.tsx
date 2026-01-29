@@ -166,7 +166,7 @@ export function Navbar() {
                      pathname.startsWith("/reset-password");
 
   return (
-    <nav className={`navbar ${isAuthPage ? "navbarAuth" : ""}`}>
+    <nav className={`navbar ${isAuthPage ? "navbarAuth" : ""} ${pathname === "/" ? "navbarLanding" : ""}`}>
       <div className="navbarContent">
         {/* Botón izquierdo con flecha */}
         {options.left && (

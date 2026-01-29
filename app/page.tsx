@@ -2,8 +2,7 @@ import { discoverTitles } from "@/lib/tmdb";
 import { PosterCarousel } from "./PosterCarousel";
 
 export default async function LandingPage() {
-  // Obtenemos películas populares para el carrusel principal.
-  const moviesData = await discoverTitles({ mediaType: "movie", page: 1 });
+  const moviesData = await discoverTitles({ mediaType: "movie", page: 2 });
   const movies = moviesData.results
     .filter((m) => m.poster_path)
     .slice(0, 20)
@@ -15,15 +14,12 @@ export default async function LandingPage() {
 
   return (
     <main className="landingShell">
-      <section className="landingInner">
-        <div className="landingWelcome">
-          <h1 className="welcomeText">
-            Bienvenido a CineMatch, el mejor lugar para saber que ver
-          </h1>
-        </div>
-        <section className="carouselSection">
-          <PosterCarousel items={movies} />
-        </section>
+      <section className="landingHero">
+        <h1 className="welcomeTitle">Bienvenido a CineMatch</h1>
+        <p className="welcomeSubtitle">las mejores recomendaciones</p>
+      </section>
+      <section className="carouselSection">
+        <PosterCarousel items={movies} />
       </section>
     </main>
   );
