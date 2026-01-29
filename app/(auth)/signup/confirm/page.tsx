@@ -6,17 +6,17 @@ export default async function SignupConfirmPage(props: {
   const { email } = await props.searchParams;
 
   return (
-    <div className="authShell">
-      <div className="authCard">
-        <div className="authHeader">
-          <div className="authTitle">Revisá tu email</div>
-          <div className="authSubtitle">
+    <div className="min-h-screen grid place-items-center p-7 pt-20 bg-white">
+      <div className="w-full max-w-[700px] border border-zinc-200 rounded-2xl p-6 bg-black text-white shadow-xl">
+        <div className="flex flex-col gap-1.5 mb-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-white">Revisá tu email</h1>
+          <p className="text-white/85 text-[15px] leading-relaxed">
             Te enviamos un correo para validar tu cuenta. Seguí el enlace del mail y después iniciá
             sesión.
-          </div>
+          </p>
         </div>
 
-        <div className="notice">
+        <div className="rounded-xl border border-white/30 bg-white/10 text-white/90 px-3 py-2.5 text-[13px] leading-snug">
           {email ? (
             <>
               Enviamos el mensaje a <strong>{email}</strong>. Si no lo ves, revisá la carpeta de
@@ -27,10 +27,10 @@ export default async function SignupConfirmPage(props: {
           )}
         </div>
 
-        <div style={{ height: 14 }} />
-        <p className="muted">
+        <div className="h-3.5" />
+        <p className="text-white/70 text-sm">
           Cuando hayas confirmado tu cuenta, podés{" "}
-          <Link className="link" href="/login">
+          <Link className="underline underline-offset-2 decoration-white/45 hover:decoration-white/85" href="/login">
             ir al login
           </Link>
           .
@@ -39,4 +39,3 @@ export default async function SignupConfirmPage(props: {
     </div>
   );
 }
-

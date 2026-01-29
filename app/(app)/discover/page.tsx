@@ -6,11 +6,8 @@ import { discoverTitles, type MediaType } from "@/lib/tmdb";
 export default async function DiscoverPage() {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
-
-  // Middleware ya protege, pero dejamos esto por seguridad.
   const user = data.user;
 
-  // Preferencias (v1): si no hay, usamos defaults.
   const { data: prefs } = user
     ? await supabase
         .from("preferences")
@@ -28,21 +25,25 @@ export default async function DiscoverPage() {
   const items = (page.results ?? []).filter((r) => r.media_type !== "person").slice(0, 12);
 
   return (
-    <div className="container">
-      <div className="card">
-        <div className="title">Discover</div>
-        <p className="muted">
+    <div className="w-full max-w-[1200px] mx-auto px-6 pt-20">
+      <div className="border border-zinc-200 rounded-2xl p-4 bg-white dark:bg-zinc-900 dark:border-zinc-700">
+        <h1 className="text-2xl font-semibold tracking-tight mb-2 text-zinc-900 dark:text-white">Discover</h1>
+        <p className="text-zinc-600 dark:text-zinc-400 text-sm">
           Recomendaciones rápidas (v1) usando tus preferencias. Región: {region}.
         </p>
       </div>
-      <div style={{ height: 14 }} />
-      <div className="grid">
+      <div className="h-3.5" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {items.map((it) => {
           const mt = (it.media_type === "tv" ? "tv" : "movie") as MediaType;
           return (
-            <Link key={`${mt}-${it.id}`} className="card" href={`/title/${mt}/${it.id}`}>
-              <div style={{ fontWeight: 600 }}>{it.title ?? it.name ?? "Sin título"}</div>
-              <div className="muted" style={{ marginTop: 6 }}>
+            <Link
+              key={`${mt}-${it.id}`}
+              href={`/title/${mt}/${it.id}`}
+              className="border border-zinc-200 rounded-2xl p-4 bg-white dark:bg-zinc-900 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
+            >
+              <div className="font-semibold text-zinc-900 dark:text-white">{it.title ?? it.name ?? "Sin título"}</div>
+              <div className="text-zinc-600 dark:text-zinc-400 text-sm mt-1.5">
                 {mt.toUpperCase()} · ⭐ {Number(it.vote_average ?? 0).toFixed(1)}
               </div>
             </Link>
@@ -52,4 +53,3 @@ export default async function DiscoverPage() {
     </div>
   );
 }
-

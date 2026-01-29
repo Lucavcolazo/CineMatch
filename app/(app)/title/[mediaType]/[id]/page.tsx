@@ -60,17 +60,29 @@ export default async function TitlePage(props: {
   const { link, flatrate, rent, buy } = pickProvidersForRegion(watch, region);
 
   return (
-    <div className="container">
-      <div className="card">
-        <div className="title">{details.title ?? details.name ?? "Detalle"}</div>
-        <p className="muted">{details.overview || "Sin descripción."}</p>
-        <div style={{ height: 12 }} />
-        <div className="row">
-          <Link className="button buttonSecondary" href="/search">
+    <div className="w-full max-w-[1200px] mx-auto px-6 pt-20">
+      <div className="border border-zinc-200 rounded-2xl p-4 bg-white dark:bg-zinc-900 dark:border-zinc-700">
+        <h1 className="text-2xl font-semibold tracking-tight mb-2 text-zinc-900 dark:text-white">
+          {details.title ?? details.name ?? "Detalle"}
+        </h1>
+        <p className="text-zinc-600 dark:text-zinc-400 text-sm leading-relaxed">
+          {details.overview || "Sin descripción."}
+        </p>
+        <div className="h-3" />
+        <div className="flex gap-3 flex-wrap items-center">
+          <Link
+            href="/search"
+            className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-transparent text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
             Volver a Search
           </Link>
           {link ? (
-            <a className="button" href={link} target="_blank" rel="noreferrer">
+            <a
+              href={link}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+            >
               Ver en TMDB
             </a>
           ) : null}
@@ -78,8 +90,8 @@ export default async function TitlePage(props: {
 
         {user ? (
           <>
-            <div style={{ height: 14 }} />
-            <div className="row">
+            <div className="h-3.5" />
+            <div className="flex gap-3 flex-wrap items-center">
               <form
                 action={async () => {
                   "use server";
@@ -90,28 +102,28 @@ export default async function TitlePage(props: {
                   });
                 }}
               >
-                <button className="button" type="submit">
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
+                >
                   {fav?.id ? "Quitar de favoritos" : "Agregar a favoritos"}
                 </button>
               </form>
 
-              <form
-                action={async (formData: FormData) => {
-                  "use server";
-                  const rating = Number(formData.get("rating"));
-                  if (Number.isFinite(rating) && rating >= 1 && rating <= 10) {
-                    await upsertRating({
-                      tmdbId,
-                      mediaType,
-                      rating,
-                      nextPath: `/title/${mediaType}/${tmdbId}`,
-                    });
-                  }
-                }}
-                className="row"
+              <form action={async (formData: FormData) => {
+                "use server";
+                const rating = Number(formData.get("rating"));
+                if (Number.isFinite(rating) && rating >= 1 && rating <= 10) {
+                  await upsertRating({
+                    tmdbId,
+                    mediaType,
+                    rating,
+                    nextPath: `/title/${mediaType}/${tmdbId}`,
+                  });
+                }
+              }} className="flex gap-3 flex-wrap items-center"
               >
                 <input
-                  className="input"
                   name="rating"
                   type="number"
                   min={1}
@@ -119,9 +131,12 @@ export default async function TitlePage(props: {
                   step={1}
                   defaultValue={ratingRow?.rating ?? ""}
                   placeholder="Rating (1-10)"
-                  style={{ width: 180 }}
+                  className="w-[180px] py-2.5 px-3 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-zinc-400"
                 />
-                <button className="button buttonSecondary" type="submit">
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-transparent text-zinc-900 dark:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                >
                   Guardar rating
                 </button>
               </form>
@@ -129,35 +144,39 @@ export default async function TitlePage(props: {
           </>
         ) : (
           <>
-            <div style={{ height: 14 }} />
-            <p className="muted">
-              Para guardar favoritos/ratings, <Link href="/login">iniciá sesión</Link>.
+            <div className="h-3.5" />
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm">
+              Para guardar favoritos/ratings,{" "}
+              <Link href="/login" className="underline underline-offset-2 hover:text-zinc-900 dark:hover:text-white">
+                iniciá sesión
+              </Link>
+              .
             </p>
           </>
         )}
       </div>
 
-      <div style={{ height: 14 }} />
-      <div className="card">
-        <div style={{ fontWeight: 700, marginBottom: 8 }}>
+      <div className="h-3.5" />
+      <div className="border border-zinc-200 rounded-2xl p-4 bg-white dark:bg-zinc-900 dark:border-zinc-700">
+        <div className="font-bold mb-2 text-zinc-900 dark:text-white">
           Plataformas (región {region})
         </div>
-        <div className="row">
+        <div className="flex gap-6 flex-wrap">
           <div>
-            <div style={{ fontWeight: 600 }}>Streaming</div>
-            <div className="muted">
+            <div className="font-semibold text-zinc-900 dark:text-white">Streaming</div>
+            <div className="text-zinc-600 dark:text-zinc-400 text-sm">
               {flatrate.length ? flatrate.map((p) => p.provider_name).join(", ") : "No disponible"}
             </div>
           </div>
           <div>
-            <div style={{ fontWeight: 600 }}>Alquiler</div>
-            <div className="muted">
+            <div className="font-semibold text-zinc-900 dark:text-white">Alquiler</div>
+            <div className="text-zinc-600 dark:text-zinc-400 text-sm">
               {rent.length ? rent.map((p) => p.provider_name).join(", ") : "No disponible"}
             </div>
           </div>
           <div>
-            <div style={{ fontWeight: 600 }}>Compra</div>
-            <div className="muted">
+            <div className="font-semibold text-zinc-900 dark:text-white">Compra</div>
+            <div className="text-zinc-600 dark:text-zinc-400 text-sm">
               {buy.length ? buy.map((p) => p.provider_name).join(", ") : "No disponible"}
             </div>
           </div>
@@ -166,4 +185,3 @@ export default async function TitlePage(props: {
     </div>
   );
 }
-

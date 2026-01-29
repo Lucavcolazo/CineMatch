@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { TextField } from "@/lib/ui/AuthFields";
+import { TextField } from "@/components/auth/AuthFields";
 import { ArrowLeft, Send } from "lucide-react";
 
 export default async function ForgotPasswordPage(props: {
@@ -14,11 +14,9 @@ export default async function ForgotPasswordPage(props: {
   async function sendReset(formData: FormData) {
     "use server";
     const email = String(formData.get("email") ?? "").trim();
-
     const supabase = await createSupabaseServerClient();
-
-    // Si tenemos origin, configuramos a dónde redirige el link del email.
-    const origin = headers().get("origin");
+    const h = await headers();
+    const origin = h.get("origin");
     const redirectTo = origin ? `${origin}/reset-password` : undefined;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -29,7 +27,6 @@ export default async function ForgotPasswordPage(props: {
       redirect(`/forgot-password?error=${encodeURIComponent(error.message)}`);
     }
 
-    // Mensaje genérico (buena práctica para no filtrar si el email existe o no).
     redirect(
       `/forgot-password?success=${encodeURIComponent(
         "Si el email existe, te enviamos un enlace para recuperar tu contraseña.",
@@ -38,19 +35,23 @@ export default async function ForgotPasswordPage(props: {
   }
 
   return (
-    <div className="authShell">
-      <div className="authCard">
-        <div className="authHeader">
-          <div className="authTitle">Recuperar contraseña</div>
-          <div className="authSubtitle">
+    <div className="min-h-screen grid place-items-center p-7 pt-20 bg-white">
+      <div className="w-full max-w-[700px] border border-zinc-200 rounded-2xl p-6 bg-black text-white shadow-xl">
+        <div className="flex flex-col gap-1.5 mb-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-white">Recuperar contraseña</h1>
+          <p className="text-white/85 text-[15px] leading-relaxed">
             Te enviamos un enlace para que puedas elegir una nueva contraseña.
-          </div>
+          </p>
         </div>
 
-        {error ? <div className="notice noticeError">{error}</div> : null}
-        {success ? <div className="notice noticeSuccess">{success}</div> : null}
+        {error ? (
+          <div className="rounded-xl border border-white/40 bg-white/15 text-white px-3 py-2.5 text-sm mb-3">{error}</div>
+        ) : null}
+        {success ? (
+          <div className="rounded-xl border border-white/40 bg-white/15 text-white px-3 py-2.5 text-sm mb-3">{success}</div>
+        ) : null}
 
-        <form action={sendReset} className="form">
+        <form action={sendReset} className="flex flex-col gap-3">
           <TextField
             name="email"
             type="email"
@@ -59,23 +60,23 @@ export default async function ForgotPasswordPage(props: {
             autoComplete="email"
             icon="mail"
           />
-          <button className="buttonPrimary" type="submit">
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center gap-2 py-3 px-3.5 rounded-xl border border-white/30 bg-white text-black font-medium shadow-lg transition-all hover:brightness-105 active:translate-y-px"
+          >
             <Send size={18} aria-hidden="true" />
             Enviar enlace
           </button>
         </form>
 
-        <div style={{ height: 14 }} />
-        <p className="muted">
-          <Link className="link" href="/login">
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <ArrowLeft size={16} aria-hidden="true" />
-              Volver al login
-            </span>
+        <div className="h-3.5" />
+        <p className="text-white/70 text-sm">
+          <Link className="underline underline-offset-2 decoration-white/45 hover:decoration-white/85 inline-flex items-center gap-2" href="/login">
+            <ArrowLeft size={16} aria-hidden="true" />
+            Volver al login
           </Link>
         </p>
       </div>
     </div>
   );
 }
-

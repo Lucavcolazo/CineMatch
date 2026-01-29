@@ -1,203 +1,36 @@
-:root {
-  /* Nuetral Dark Theme Palette */
-  --background: #000000;
-  --foreground: #ffffff;
-  
-  --zinc-50: #fafafa;
-  --zinc-100: #f4f4f5;
-  --zinc-200: #e4e4e7;
-  --zinc-300: #d4d4d8;
-  --zinc-400: #a1a1aa;
-  --zinc-500: #71717a;
-  --zinc-600: #52525b;
-  --zinc-700: #3f3f46;
-  --zinc-800: #27272a;
-  --zinc-900: #18181b;
-  --zinc-950: #09090b;
+@import "tailwindcss";
 
-  /* Accent Colors */
-  --accent-primary: #3b82f6; /* Blue */
-  --accent-secondary: #3b82f6; /* Blue */
-  
-  /* Text Colors */
-  --text-primary: var(--zinc-50);
-  --text-secondary: var(--zinc-400);
-  --text-tertiary: var(--zinc-600);
-
-  /* Borders & Layers */
-  --border-subtle: var(--zinc-800);
-  --surface-hover: var(--zinc-900);
-  
-  /* Noise Texture (Data URI) */
-  --noise-pattern: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #000000;
-    --foreground: #ffffff;
+/* Reset base */
+@layer base {
+  * {
+    @apply box-border p-0 m-0;
+  }
+  a {
+    @apply text-inherit no-underline;
+  }
+  body {
+    @apply text-zinc-50 bg-black antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  html, body {
+    @apply max-w-[100vw] overflow-x-hidden h-full;
   }
 }
 
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-  height: 100%;
+/* Animación del carrusel infinito (usa variables CSS inyectadas por el componente) */
+@keyframes scrollInfinite {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(-1 * var(--carousel-width, 100%))); }
 }
 
-body {
-  color: var(--text-primary);
-  background: #000000;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
+.animate-scroll-infinite {
+  animation: scrollInfinite var(--carousel-duration, 60s) linear infinite;
+}
+.animate-scroll-infinite:hover {
+  animation-play-state: paused;
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-/* Typography Utilities */
-.text-gradient {
-  background: linear-gradient(135deg, #fff 0%, #a5a5a5 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.text-gradient-primary {
-  background: linear-gradient(135deg, #93c5fd 0%, #3b82f6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Button Components */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 24px;
-  height: 48px;
-  border-radius: 9999px;
-  font-weight: 500;
-  font-size: 15px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  border: 1px solid transparent;
-}
-
-.btn-sm {
-  height: 36px;
-  padding: 0 16px;
-  font-size: 14px;
-}
-
-.btn-primary {
-  background: #fff;
-  color: #000;
-  border-color: #fff;
-}
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
-}
-
-.btn-ghost {
-  color: var(--text-secondary);
-  background: transparent;
-}
-.btn-ghost:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.btn-outline {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  backdrop-filter: blur(10px);
-}
-.btn-outline:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* Layout Utilities */
-.container {
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.8s ease forwards;
-}
-
-/* Background Effects - Removed for clean black background */
-
-/* Landing Hero Section */
-.landingShell {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  padding: 180px 24px 24px;
-  background-image: url('/fondo.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  color: #ffffff;
-  position: relative;
-}
-
-.landingShell::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 0;
-}
-
-.landingShell > * {
-  position: relative;
-  z-index: 1;
-}
-
-.landingHero {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  max-width: 1400px;
-  margin: 0 auto;
-  width: 100%;
-  padding: 0 24px;
-  margin-bottom: 0;
-  position: relative;
-  z-index: 2;
-  text-align: center;
-  animation: welcomeEnter 0.9s ease-out forwards;
-}
-
+/* Animación de entrada del hero */
 @keyframes welcomeEnter {
   from {
     opacity: 0;
@@ -208,82 +41,6 @@ a {
     transform: translateY(0);
   }
 }
-
-.welcomeTitle {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: clamp(36px, 8vw, 72px);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: #ffffff;
-  margin: 0;
-  text-align: center;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
-}
-
-.welcomeSubtitle {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: clamp(16px, 2.5vw, 22px);
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 12px 0 0 0;
-  text-align: center;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-
-/* Poster Carousel Styles - fijado en la parte baja */
-.carouselSection {
-  max-width: 1400px;
-  margin-top: auto;
-  width: 100%;
-  padding: 24px 24px 32px;
-  position: relative;
-  z-index: 2;
-}
-
-.carouselShell {
-  overflow-x: hidden;
-  width: 100%;
-}
-
-.carouselTrack {
-  display: flex;
-  gap: 16px;
-  padding: 8px 0;
-}
-
-.carouselTrackInfinite {
-  animation: scrollInfinite 60s linear infinite;
-}
-.carouselTrackInfinite:hover {
-  animation-play-state: paused;
-}
-
-@keyframes scrollInfinite {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(calc(-1 * var(--carousel-width, 100%))); }
-}
-
-.posterCard {
-  flex: 0 0 auto;
-  width: 150px;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-  transition: transform 0.2s ease;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  background: #000000;
-}
-
-.posterCard:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-}
-
-.posterImage {
-  width: 100%;
-  height: 220px;
-  object-fit: cover;
-  display: block;
+.animate-welcome-enter {
+  animation: welcomeEnter 0.9s ease-out forwards;
 }

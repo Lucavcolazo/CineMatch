@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { PasswordField, TextField } from "@/lib/ui/AuthFields";
+import { PasswordField, TextField } from "@/components/auth/AuthFields";
 import { LogIn } from "lucide-react";
 
 export default async function LoginPage(props: {
@@ -22,24 +22,27 @@ export default async function LoginPage(props: {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      // Por simplicidad v1, usamos redirect con query param.
       redirect(`/login?error=${encodeURIComponent(error.message)}`);
     }
     redirect(next ? next : "/discover");
   }
 
   return (
-    <div className="authShell">
-      <div className="authCard">
-        <div className="authHeader">
-          <div className="authTitle">Bienvenido</div>
-          <div className="authSubtitle">Iniciá sesión para seguir descubriendo.</div>
+    <div className="min-h-screen grid place-items-center p-7 pt-20 bg-white">
+      <div className="w-full max-w-[700px] border border-zinc-200 rounded-2xl p-6 bg-black text-white shadow-xl">
+        <div className="flex flex-col gap-1.5 mb-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-white">Bienvenido</h1>
+          <p className="text-white/85 text-[15px] leading-relaxed">Iniciá sesión para seguir descubriendo.</p>
         </div>
 
-        {error ? <div className="notice noticeError">{error}</div> : null}
-        {success ? <div className="notice noticeSuccess">{success}</div> : null}
+        {error ? (
+          <div className="rounded-xl border border-white/40 bg-white/15 text-white px-3 py-2.5 text-sm mb-3">{error}</div>
+        ) : null}
+        {success ? (
+          <div className="rounded-xl border border-white/40 bg-white/15 text-white px-3 py-2.5 text-sm mb-3">{success}</div>
+        ) : null}
 
-        <form action={login} className="form">
+        <form action={login} className="flex flex-col gap-3">
           <TextField
             name="email"
             type="email"
@@ -55,24 +58,27 @@ export default async function LoginPage(props: {
             autoComplete="current-password"
             icon="lock"
           />
-          <button className="buttonPrimary" type="submit">
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center gap-2 py-3 px-3.5 rounded-xl border border-white/30 bg-white text-black font-medium shadow-lg transition-all hover:brightness-105 active:translate-y-px"
+          >
             <LogIn size={18} aria-hidden="true" />
             Entrar
           </button>
         </form>
 
-        <div style={{ height: 14 }} />
-        <div className="stack">
-          <p className="muted">
+        <div className="h-3.5" />
+        <div className="flex flex-col gap-3">
+          <p className="text-white/70 text-sm">
             ¿Olvidaste tu contraseña?{" "}
-            <Link className="link" href="/forgot-password">
+            <Link className="underline underline-offset-2 decoration-white/45 hover:decoration-white/85" href="/forgot-password">
               Recuperala acá
             </Link>
             .
           </p>
-          <p className="muted">
+          <p className="text-white/70 text-sm">
             ¿No tenés cuenta?{" "}
-            <Link className="link" href="/signup">
+            <Link className="underline underline-offset-2 decoration-white/45 hover:decoration-white/85" href="/signup">
               Creala acá
             </Link>
             .
@@ -82,4 +88,3 @@ export default async function LoginPage(props: {
     </div>
   );
 }
-

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { SignupForm } from "@/lib/ui/SignupForm";
+import { SignupForm } from "@/components/auth/SignupForm";
 import { UserPlus } from "lucide-react";
 
 export default async function SignupPage(props: {
@@ -35,7 +35,6 @@ export default async function SignupPage(props: {
       );
     }
 
-    // Validación mínima server-side: 8+ caracteres, mayúscula, minúscula y número.
     const passwordOk = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(password);
     if (!passwordOk) {
       redirect(
@@ -55,31 +54,38 @@ export default async function SignupPage(props: {
     });
     if (error) redirect(`/signup?error=${encodeURIComponent(error.message)}`);
 
-    // Si tu proyecto requiere confirmación por email, mostramos una pantalla dedicada.
     redirect(`/signup/confirm?email=${encodeURIComponent(email)}`);
   }
 
   return (
-    <div className="authShell">
-      <div className="authCard">
-        <div className="authHeader">
-          <div className="authTitle">Crear cuenta</div>
+    <div className="min-h-screen grid place-items-center p-7 pt-20 bg-white">
+      <div className="w-full max-w-[700px] border border-zinc-200 rounded-2xl p-6 bg-black text-white shadow-xl">
+        <div className="flex flex-col gap-1.5 mb-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-white">Crear cuenta</h1>
         </div>
 
-        {error ? <div className="notice noticeError">{error}</div> : null}
-        {success ? <div className="notice noticeSuccess">{success}</div> : null}
+        {error ? (
+          <div className="rounded-xl border border-white/40 bg-white/15 text-white px-3 py-2.5 text-sm mb-3">{error}</div>
+        ) : null}
+        {success ? (
+          <div className="rounded-xl border border-white/40 bg-white/15 text-white px-3 py-2.5 text-sm mb-3">{success}</div>
+        ) : null}
 
         <SignupForm signupAction={signup} />
 
-        <button className="buttonPrimary" formAction={signup} type="submit">
+        <button
+          formAction={signup}
+          type="submit"
+          className="mt-3 inline-flex items-center justify-center gap-2 py-3 px-3.5 rounded-xl border border-white/30 bg-white text-black font-medium shadow-lg transition-all hover:brightness-105 active:translate-y-px"
+        >
           <UserPlus size={18} aria-hidden="true" />
           Crear cuenta
         </button>
 
-        <div style={{ height: 14 }} />
-        <p className="muted">
+        <div className="h-3.5" />
+        <p className="text-white/70 text-sm">
           ¿Ya tenés cuenta?{" "}
-          <Link className="link" href="/login">
+          <Link className="underline underline-offset-2 decoration-white/45 hover:decoration-white/85" href="/login">
             Entrá acá
           </Link>
           .
@@ -88,4 +94,3 @@ export default async function SignupPage(props: {
     </div>
   );
 }
-
