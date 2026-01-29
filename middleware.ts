@@ -1,8 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-import { getRequiredEnv } from "@/lib/env";
-
 // Protege rutas privadas y mantiene la sesión sincronizada vía cookies.
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next({
@@ -11,8 +9,11 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const url = getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const anonKey = getRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error("Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY en .env");
+  }
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -41,6 +42,13 @@ export async function middleware(request: NextRequest) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  // Página principal solo para usuarios no logueados; si está logueado, ir a discover.
+  if (pathname === "/" && user) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/discover";
     return NextResponse.redirect(redirectUrl);
   }
 

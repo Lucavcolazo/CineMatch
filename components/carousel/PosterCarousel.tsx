@@ -54,15 +54,16 @@ export function PosterCarousel({ items }: Props) {
         className="flex gap-4 py-2 animate-scroll-infinite will-change-transform"
         ref={trackRef}
       >
+        {/* Mismo tamaño que en discover/search/modal: 160×240 px */}
         {duplicatedItems.map((item, index) => (
           <div
             key={`${item.id}-${index}`}
-            className="flex-shrink-0 w-[150px] rounded-xl overflow-hidden relative transition-transform duration-200 border border-white/10 bg-black shadow-lg hover:-translate-y-1 hover:shadow-xl"
+            className="flex-shrink-0 w-40 rounded-xl overflow-hidden relative transition-transform duration-200 border border-white/10 bg-black shadow-lg hover:-translate-y-1 hover:shadow-xl"
           >
             <img
               src={item.posterUrl}
               alt={item.title}
-              className="w-full h-[220px] object-cover block"
+              className="w-full h-60 object-cover block"
             />
           </div>
         ))}

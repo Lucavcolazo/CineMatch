@@ -44,3 +44,19 @@
 .animate-welcome-enter {
   animation: welcomeEnter 0.9s ease-out forwards;
 }
+
+/* Entrada de tarjetas en discover: desde abajo suave con stagger */
+@keyframes discoverCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-discover-card {
+  animation: discoverCardEnter 0.45s ease-out forwards;
+  opacity: 0;
+}

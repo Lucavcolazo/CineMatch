@@ -2,13 +2,14 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { getRequiredEnv } from "@/lib/env";
-
 // Cliente Supabase para el servidor (Next App Router) con cookies para la sesión.
 export async function createSupabaseServerClient(): Promise<SupabaseClient> {
   const cookieStore = await cookies();
-  const url = getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const anonKey = getRequiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error("Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY en .env");
+  }
 
   return createServerClient(url, anonKey, {
     cookies: {

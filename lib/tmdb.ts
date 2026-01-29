@@ -1,5 +1,3 @@
-import { getRequiredEnv } from "@/lib/env";
-
 export type MediaType = "movie" | "tv";
 
 type TmdbPagedResponse<T> = {
@@ -33,6 +31,8 @@ export type TmdbTitleDetails = {
   vote_average?: number;
   release_date?: string;
   first_air_date?: string;
+  runtime?: number; // películas, en minutos
+  episode_run_time?: number[]; // series, duración por episodio
 };
 
 export type TmdbProvider = {
@@ -58,8 +58,9 @@ export type TmdbWatchProvidersResponse = {
 const TMDB_BASE = "https://api.themoviedb.org/3";
 
 function getTmdbApiKey(): string {
-  // TMDB recomienda API v3 key (query param).
-  return getRequiredEnv("TMDB_API_KEY");
+  const key = process.env.TMDB_API_KEY;
+  if (!key) throw new Error("Falta TMDB_API_KEY en .env");
+  return key;
 }
 
 async function tmdbFetch<T>(path: string, params?: Record<string, string>) {
@@ -107,6 +108,16 @@ export async function getRecommendations(
   id: number
 ): Promise<TmdbPagedResponse<TmdbSearchResult>> {
   return tmdbFetch(`/${mediaType}/${id}/recommendations`);
+}
+
+export type TmdbGenre = { id: number; name: string };
+
+export async function getGenreMovieList(): Promise<{ genres: TmdbGenre[] }> {
+  return tmdbFetch("/genre/movie/list");
+}
+
+export async function getGenreTvList(): Promise<{ genres: TmdbGenre[] }> {
+  return tmdbFetch("/genre/tv/list");
 }
 
 export async function discoverTitles(params: {
