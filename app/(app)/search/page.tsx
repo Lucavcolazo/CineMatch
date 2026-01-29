@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { searchMulti, type MediaType } from "@/lib/tmdb";
-import { Nav } from "@/lib/ui/Nav";
 
 export default async function SearchPage(props: {
   searchParams: Promise<{ q?: string }>;
@@ -13,8 +12,6 @@ export default async function SearchPage(props: {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
 
-  const isAuthed = Boolean(data.user);
-
   const results =
     query.length >= 2 ? await searchMulti(query) : { results: [] as any[] };
 
@@ -24,7 +21,6 @@ export default async function SearchPage(props: {
 
   return (
     <div className="container">
-      <Nav isAuthed={isAuthed} />
       <div className="card">
         <div className="title">Search</div>
         <form className="row" action="/search" method="get">

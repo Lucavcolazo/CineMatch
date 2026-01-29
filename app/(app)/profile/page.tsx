@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { Nav } from "@/lib/ui/Nav";
 import { updatePreferences } from "@/lib/actions/user";
 
 export default async function ProfilePage() {
@@ -29,7 +28,6 @@ export default async function ProfilePage() {
 
   return (
     <div className="container">
-      <Nav isAuthed />
       <div className="card">
         <div className="title">Profile</div>
         <p className="muted">Sesión: {user.email}</p>

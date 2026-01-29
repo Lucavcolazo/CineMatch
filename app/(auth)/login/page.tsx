@@ -2,15 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { PasswordField, TextField } from "@/lib/ui/AuthFields";
+import { LogIn } from "lucide-react";
 
 export default async function LoginPage(props: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; success?: string }>;
 }) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
   if (data.user) redirect("/discover");
 
-  const { next } = await props.searchParams;
+  const { next, error, success } = await props.searchParams;
 
   async function login(formData: FormData) {
     "use server";
@@ -27,26 +29,55 @@ export default async function LoginPage(props: {
   }
 
   return (
-    <div className="container">
-      <div className="card">
-        <div className="title">Login</div>
-        <form action={login} className="row" style={{ alignItems: "stretch" }}>
-          <input className="input" name="email" type="email" placeholder="Email" required />
-          <input
-            className="input"
-            name="password"
-            type="password"
-            placeholder="Password"
+    <div className="authShell">
+      <div className="authCard">
+        <div className="authHeader">
+          <div className="authTitle">Bienvenido</div>
+          <div className="authSubtitle">Iniciá sesión para seguir descubriendo.</div>
+        </div>
+
+        {error ? <div className="notice noticeError">{error}</div> : null}
+        {success ? <div className="notice noticeSuccess">{success}</div> : null}
+
+        <form action={login} className="form">
+          <TextField
+            name="email"
+            type="email"
+            placeholder="Email"
             required
+            autoComplete="email"
+            icon="mail"
           />
-          <button className="button" type="submit">
+          <PasswordField
+            name="password"
+            placeholder="Contraseña"
+            required
+            autoComplete="current-password"
+            icon="lock"
+          />
+          <button className="buttonPrimary" type="submit">
+            <LogIn size={18} aria-hidden="true" />
             Entrar
           </button>
         </form>
-        <div style={{ height: 12 }} />
-        <p className="muted">
-          ¿No tenés cuenta? <Link href="/signup">Creala acá</Link>.
-        </p>
+
+        <div style={{ height: 14 }} />
+        <div className="stack">
+          <p className="muted">
+            ¿Olvidaste tu contraseña?{" "}
+            <Link className="link" href="/forgot-password">
+              Recuperala acá
+            </Link>
+            .
+          </p>
+          <p className="muted">
+            ¿No tenés cuenta?{" "}
+            <Link className="link" href="/signup">
+              Creala acá
+            </Link>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );

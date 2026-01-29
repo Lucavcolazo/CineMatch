@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { Nav } from "@/lib/ui/Nav";
 
 export default async function FavoritesPage() {
   const supabase = await createSupabaseServerClient();
@@ -18,7 +17,6 @@ export default async function FavoritesPage() {
 
   return (
     <div className="container">
-      <Nav isAuthed />
       <div className="card">
         <div className="title">Favorites</div>
         <p className="muted">Lista simple (v1) basada en IDs de TMDB.</p>

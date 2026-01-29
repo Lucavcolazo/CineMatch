@@ -7,7 +7,6 @@ import {
   type MediaType,
   type TmdbProvider,
 } from "@/lib/tmdb";
-import { Nav } from "@/lib/ui/Nav";
 import { toggleFavorite, upsertRating } from "@/lib/actions/user";
 
 function pickProvidersForRegion(
@@ -30,7 +29,6 @@ export default async function TitlePage(props: {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
   const user = data.user;
-  const isAuthed = Boolean(user);
 
   const { data: prefs } = user
     ? await supabase.from("preferences").select("region").eq("user_id", user.id).maybeSingle()
@@ -63,7 +61,6 @@ export default async function TitlePage(props: {
 
   return (
     <div className="container">
-      <Nav isAuthed={isAuthed} />
       <div className="card">
         <div className="title">{details.title ?? details.name ?? "Detalle"}</div>
         <p className="muted">{details.overview || "Sin descripción."}</p>

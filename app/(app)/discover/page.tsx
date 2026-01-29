@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { discoverTitles, type MediaType } from "@/lib/tmdb";
-import { Nav } from "@/lib/ui/Nav";
 
 export default async function DiscoverPage() {
   const supabase = await createSupabaseServerClient();
@@ -10,7 +9,6 @@ export default async function DiscoverPage() {
 
   // Middleware ya protege, pero dejamos esto por seguridad.
   const user = data.user;
-  const isAuthed = Boolean(user);
 
   // Preferencias (v1): si no hay, usamos defaults.
   const { data: prefs } = user
@@ -31,7 +29,6 @@ export default async function DiscoverPage() {
 
   return (
     <div className="container">
-      <Nav isAuthed={isAuthed} />
       <div className="card">
         <div className="title">Discover</div>
         <p className="muted">
