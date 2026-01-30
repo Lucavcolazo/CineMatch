@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { TitleCard } from "@/components/discover/TitleCard";
 import { TitleModal } from "@/components/discover/TitleModal";
+import { Footer } from "@/components/Footer";
 import type { MediaType } from "@/lib/tmdb";
 
 type WatchedItem = {
@@ -67,6 +68,7 @@ export function WatchedClient({ initialItems, region }: Props) {
           onClose={() => setModal(null)}
         />
       ) : null}
+        <Footer />
     </div>
   );
 }

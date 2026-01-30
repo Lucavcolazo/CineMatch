@@ -207,7 +207,7 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar películas o series..."
-                className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 text-white pl-2.5 pr-8 py-2 text-sm placeholder:text-white/50 outline-none focus:ring-2 focus:ring-white/30"
+                className="discover-search-input w-full min-w-0 rounded-md border border-white/20 bg-white/5 text-white pl-2.5 pr-8 py-2 text-sm placeholder:text-white/50 outline-none focus:ring-2 focus:ring-white/30"
               />
               <button
                 type="submit"

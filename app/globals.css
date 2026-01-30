@@ -64,6 +64,35 @@
   opacity: 0;
 }
 
+/* Estadísticas de perfil: entrada de tarjetas y barras */
+@keyframes statsEnter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-stats-enter {
+  opacity: 0;
+  animation: statsEnter 0.5s ease-out forwards;
+}
+
+@keyframes statsBarIn {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.stats-bar-in {
+  transform-origin: left;
+  animation: statsBarIn 0.6s ease-out forwards;
+}
+
 /* Glow blanco para el enlace activo en el navbar (Descubrir / Mis recomendaciones) */
 .nav-tab-active-glow {
   text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);
@@ -88,6 +117,16 @@
 /* Inputs de auth: cursor (caret) visible en modo oscuro */
 input.caret-white {
   caret-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Ocultar la X nativa del input type="search" en Descubrir */
+.discover-search-input::-webkit-search-cancel-button,
+.discover-search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.discover-search-input::-moz-search-cancel-button {
+  display: none;
 }
 
 /* Efecto suave de brillo blanco para "Pensando..." en el chat (minimal, gris) */

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { Footer } from "@/components/Footer";
 
 export default async function FavoritesPage() {
   const supabase = await createSupabaseServerClient();
@@ -50,6 +51,7 @@ export default async function FavoritesPage() {
           </Link>
         ))}
       </div>
+      <Footer />
     </div>
   );
 }

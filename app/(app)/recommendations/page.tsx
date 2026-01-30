@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getRecommendations, type MediaType } from "@/lib/tmdb";
 import { RecommendationsClient } from "@/components/recommendations/RecommendationsClient";
+import { Footer } from "@/components/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,9 @@ export default async function RecommendationsPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-black text-white pt-[110px] lg:pt-[57px] flex items-center justify-center">
+      <div className="min-h-screen bg-black text-white pt-[110px] lg:pt-[57px] flex flex-col items-center justify-center">
         <p className="text-white/80">Iniciá sesión para ver tus recomendaciones.</p>
+        <Footer />
       </div>
     );
   }
@@ -29,7 +31,7 @@ export default async function RecommendationsPage() {
 
   if (!watchedRows?.length) {
     return (
-      <div className="min-h-screen bg-black text-white pt-[110px] lg:pt-[57px] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-black text-white pt-[110px] lg:pt-[57px] flex flex-col items-center justify-center px-4">
         <div className="max-w-md text-center">
           <p className="text-white/90 mb-4">
             Marcá películas o series como vistas en Descubrir para ver recomendaciones personalizadas.
@@ -41,6 +43,7 @@ export default async function RecommendationsPage() {
             Ir a Descubrir
           </Link>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -88,7 +91,7 @@ export default async function RecommendationsPage() {
     }
   } catch (err) {
     return (
-      <div className="min-h-screen bg-black text-white pt-[110px] lg:pt-[57px] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-black text-white pt-[110px] lg:pt-[57px] flex flex-col items-center justify-center px-4">
         <div className="max-w-md text-center">
           <p className="text-white/90 mb-4">
             No pudimos cargar las recomendaciones. Probá de nuevo en unos minutos.
@@ -100,6 +103,7 @@ export default async function RecommendationsPage() {
             Reintentar
           </Link>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -110,6 +114,7 @@ export default async function RecommendationsPage() {
         initialItems={items}
         region={DEFAULT_REGION}
       />
+      <Footer />
     </div>
   );
 }

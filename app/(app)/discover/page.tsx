@@ -7,6 +7,7 @@ import {
   type MediaType,
 } from "@/lib/tmdb";
 import { DiscoverClient } from "@/components/discover/DiscoverClient";
+import { Footer } from "@/components/Footer";
 
 type MediaFilter = "movie" | "tv" | "both";
 
@@ -110,6 +111,7 @@ export default async function DiscoverPage(props: {
           initialProviders={defaultProviders}
           initialMedia="both"
         />
+        <Footer />
       </div>
     );
   }
@@ -148,6 +150,7 @@ export default async function DiscoverPage(props: {
         initialProviders={defaultProviders}
         initialMedia={media}
       />
+      <Footer />
     </div>
   );
 }
