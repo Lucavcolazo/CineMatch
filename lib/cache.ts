@@ -55,3 +55,6 @@ export const PROFILE_CACHE_TTL_MS = 2 * 60 * 1000;
 
 /** TTL para resultados de discover: 5 minutos. */
 export const DISCOVER_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/** TTL para resultados de recomendaciones (por usuario): 5 minutos. */
+export const RECOMMENDATIONS_CACHE_TTL_MS = 5 * 60 * 1000;

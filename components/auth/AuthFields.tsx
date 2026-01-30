@@ -18,6 +18,10 @@ function renderIcon(name: IconName) {
   return <Lock size={18} />;
 }
 
+// Estilo glass para inputs de auth: fondo semitransparente, blur, cursor (caret) visible
+const inputGlass =
+  "w-full py-3 pl-10 pr-3 rounded-xl border border-white/20 bg-black/30 backdrop-blur-xl text-white placeholder:text-white/50 outline-none transition-all focus:border-white/50 focus:ring-2 focus:ring-white/25 focus:bg-black/40 caret-white selection:bg-white/30";
+
 export function TextField(
   props: BaseFieldProps & { type: React.HTMLInputTypeAttribute; icon: IconName }
 ) {
@@ -30,10 +34,7 @@ export function TextField(
       >
         {renderIcon(icon)}
       </span>
-      <input
-        className="w-full py-3 pl-10 pr-3 rounded-xl border border-white/30 bg-white/10 text-white placeholder:text-white/50 outline-none transition-all focus:border-white/60 focus:ring-4 focus:ring-white/20 focus:bg-white/15"
-        {...rest}
-      />
+      <input className={inputGlass} {...rest} />
     </div>
   );
 }
@@ -52,11 +53,15 @@ export function PasswordField(
     toggleLabelHide,
     className,
     error,
+    style,
     ...rest
   } = props;
   const [visible, setVisible] = React.useState(false);
   const labelShow = toggleLabelShow ?? "Mostrar contraseña";
   const labelHide = toggleLabelHide ?? "Ocultar contraseña";
+  // Contraseña tapada: asteriscos (*) vía clase .password-asterisk en globals.css
+  const inputStyle: React.CSSProperties =
+    !visible ? { WebkitTextSecurity: "disc", ...style } : (style ?? {});
 
   return (
     <div
@@ -70,9 +75,8 @@ export function PasswordField(
       </span>
       <input
         type={visible ? "text" : "password"}
-        className={`w-full py-3 pl-10 pr-12 rounded-xl border bg-white/10 text-white placeholder:text-white/50 outline-none transition-all focus:border-white/60 focus:ring-4 focus:ring-white/20 focus:bg-white/15 ${
-          error ? "border-red-500/90" : "border-white/30"
-        }`}
+        className={`${inputGlass} pr-12 ${error ? "border-red-500/90" : ""}`}
+        style={inputStyle}
         {...rest}
       />
       <button

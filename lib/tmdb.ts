@@ -120,20 +120,62 @@ export async function getGenreTvList(): Promise<{ genres: TmdbGenre[] }> {
   return tmdbFetch("/genre/tv/list");
 }
 
+/** Construye fechas de estreno para TMDB: nunca mostrar estrenos más nuevos que hoy. */
+export function getReleaseDateParams(yearFrom?: number, yearTo?: number): {
+  primaryReleaseDateGte?: string;
+  primaryReleaseDateLte?: string;
+  firstAirDateGte?: string;
+  firstAirDateLte?: string;
+} {
+  const today = new Date().toISOString().slice(0, 10);
+  let lte = today;
+  if (yearTo != null && Number.isFinite(yearTo)) {
+    const endOfYear = `${yearTo}-12-31`;
+    lte = endOfYear < today ? endOfYear : today;
+  }
+  const gte = yearFrom != null && Number.isFinite(yearFrom) ? `${yearFrom}-01-01` : undefined;
+  return {
+    primaryReleaseDateGte: gte,
+    primaryReleaseDateLte: lte,
+    firstAirDateGte: gte,
+    firstAirDateLte: lte,
+  };
+}
+
 export async function discoverTitles(params: {
   mediaType: MediaType;
   region?: string; // e.g. AR
   genres?: number[]; // TMDB genre ids
   providers?: number[]; // TMDB watch provider ids
   page?: number;
+  /** Orden TMDB (ej. popularity.desc, release_date.desc, first_air_date.desc). Por defecto popularity.desc. */
+  sortBy?: string;
+  /** Fecha mínima de estreno (YYYY-MM-DD). Películas: primary_release_date.gte; TV: first_air_date.gte. */
+  primaryReleaseDateGte?: string;
+  /** Fecha máxima de estreno (YYYY-MM-DD). Películas: primary_release_date.lte; TV: first_air_date.lte. */
+  primaryReleaseDateLte?: string;
+  /** Para TV: first_air_date.gte (mismo valor que primary si no se pasa). */
+  firstAirDateGte?: string;
+  /** Para TV: first_air_date.lte. */
+  firstAirDateLte?: string;
 }) {
-  const { mediaType, region = "AR", genres = [], providers = [], page = 1 } = params;
+  const {
+    mediaType,
+    region = "AR",
+    genres = [],
+    providers = [],
+    page = 1,
+    sortBy,
+    primaryReleaseDateGte,
+    primaryReleaseDateLte,
+    firstAirDateGte,
+    firstAirDateLte,
+  } = params;
 
-  // Importante: el endpoint discover usa distintos nombres según movie/tv.
   const commonParams: Record<string, string> = {
     page: String(page),
     region,
-    sort_by: "popularity.desc",
+    sort_by: sortBy ?? (mediaType === "tv" ? "first_air_date.desc" : "release_date.desc"),
     include_adult: "false",
   };
 
@@ -141,6 +183,15 @@ export async function discoverTitles(params: {
   if (providers.length) {
     commonParams.with_watch_providers = providers.join(",");
     commonParams.watch_region = region;
+  }
+  if (mediaType === "movie") {
+    if (primaryReleaseDateGte) commonParams["primary_release_date.gte"] = primaryReleaseDateGte;
+    if (primaryReleaseDateLte) commonParams["primary_release_date.lte"] = primaryReleaseDateLte;
+  } else {
+    const faGte = firstAirDateGte ?? primaryReleaseDateGte;
+    const faLte = firstAirDateLte ?? primaryReleaseDateLte;
+    if (faGte) commonParams["first_air_date.gte"] = faGte;
+    if (faLte) commonParams["first_air_date.lte"] = faLte;
   }
 
   return tmdbFetch<TmdbPagedResponse<TmdbSearchResult>>(`/discover/${mediaType}`, commonParams);

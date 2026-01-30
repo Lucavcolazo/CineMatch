@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SignupForm } from "@/components/auth/SignupForm";
-import { UserPlus } from "lucide-react";
 
 export default async function SignupPage(props: {
   searchParams: Promise<{ error?: string; success?: string }>;
@@ -59,7 +58,7 @@ export default async function SignupPage(props: {
 
   return (
     <div className="min-h-screen grid place-items-center p-7 pt-20 bg-black">
-      <div className="w-full max-w-[700px] border border-white/10 rounded-2xl p-6 bg-black text-white shadow-xl">
+      <div className="w-full max-w-[700px] border border-white/20 rounded-2xl p-6 bg-black/30 backdrop-blur-xl text-white shadow-xl">
         <div className="flex flex-col gap-1.5 mb-3">
           <h1 className="text-3xl font-semibold tracking-tight text-white">Crear cuenta</h1>
         </div>
@@ -72,15 +71,6 @@ export default async function SignupPage(props: {
         ) : null}
 
         <SignupForm signupAction={signup} />
-
-        <button
-          formAction={signup}
-          type="submit"
-          className="mt-3 inline-flex items-center justify-center gap-2 py-3 px-3.5 rounded-xl border border-white/30 bg-white text-black font-medium shadow-lg transition-all hover:brightness-105 active:translate-y-px"
-        >
-          <UserPlus size={18} aria-hidden="true" />
-          Crear cuenta
-        </button>
 
         <div className="h-3.5" />
         <p className="text-white/70 text-sm">

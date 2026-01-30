@@ -2,12 +2,22 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   discoverTitles,
   getGenreMovieList,
+  getReleaseDateParams,
   type MediaType,
 } from "@/lib/tmdb";
 import { DiscoverClient } from "@/components/discover/DiscoverClient";
 
+type MediaFilter = "movie" | "tv" | "both";
+
 export default async function DiscoverPage(props: {
-  searchParams: Promise<{ region?: string; genres?: string | string[]; providers?: string | string[] }>;
+  searchParams: Promise<{
+    region?: string;
+    media?: string;
+    genres?: string | string[];
+    providers?: string | string[];
+    year_from?: string;
+    year_to?: string;
+  }>;
 }) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getUser();
@@ -21,15 +31,26 @@ export default async function DiscoverPage(props: {
         .maybeSingle()
     : { data: null as any };
 
-  const regions = (prefs?.regions as string[] | null) ?? (prefs?.region ? [prefs.region as string] : ["AR"]);
-  const defaultRegion = regions[0] ?? "AR";
   const defaultGenres = (prefs?.genres as number[]) || [];
   const defaultProviders = (prefs?.providers as number[]) || [];
+  // País: por defecto "Cualquiera" (vacío) si no hay selección en la URL.
+  const defaultRegion = "";
 
   const searchParams = await props.searchParams;
-  const regionParam = searchParams.region ?? defaultRegion;
+  const regionParam = searchParams.region !== undefined ? searchParams.region : defaultRegion;
+  const mediaParam = searchParams.media;
+  const media: MediaFilter =
+    mediaParam === "tv" ? "tv" : mediaParam === "movie" ? "movie" : "both";
   const genresParam = searchParams.genres;
   const providersParam = searchParams.providers;
+  const yearFrom = searchParams.year_from ? Number(searchParams.year_from) : undefined;
+  const yearTo = searchParams.year_to ? Number(searchParams.year_to) : undefined;
+  const {
+    primaryReleaseDateGte,
+    primaryReleaseDateLte,
+    firstAirDateGte,
+    firstAirDateLte,
+  } = getReleaseDateParams(yearFrom, yearTo);
   const genreIds = Array.isArray(genresParam)
     ? genresParam.map(Number).filter(Number.isFinite)
     : genresParam
@@ -41,21 +62,77 @@ export default async function DiscoverPage(props: {
       ? [Number(providersParam)].filter(Number.isFinite)
       : defaultProviders;
 
-  const [genreRes, page] = await Promise.all([
+  const regionForApi = regionParam || "AR";
+
+  if (media === "both") {
+    const [genreRes, movieRes, tvRes] = await Promise.all([
+      getGenreMovieList(),
+      discoverTitles({
+        mediaType: "movie" as MediaType,
+        region: regionForApi,
+        genres: genreIds.length ? genreIds : undefined,
+        providers: providerIds.length ? providerIds : undefined,
+        page: 1,
+        sortBy: "release_date.desc",
+        primaryReleaseDateGte,
+        primaryReleaseDateLte,
+      }),
+      discoverTitles({
+        mediaType: "tv" as MediaType,
+        region: regionForApi,
+        genres: genreIds.length ? genreIds : undefined,
+        providers: providerIds.length ? providerIds : undefined,
+        page: 1,
+        sortBy: "first_air_date.desc",
+        firstAirDateGte,
+        firstAirDateLte,
+      }),
+    ]);
+    const movies = (movieRes.results ?? []).slice(0, 12).map((it) => ({
+      ...it,
+      media_type: "movie" as MediaType,
+    }));
+    const tvs = (tvRes.results ?? []).slice(0, 12).map((it) => ({
+      ...it,
+      media_type: "tv" as MediaType,
+    }));
+    const items = [...movies, ...tvs];
+    const genres = genreRes.genres ?? [];
+    return (
+      <div className="min-h-screen bg-black text-white pt-[57px]">
+        <DiscoverClient
+          items={items}
+          genres={genres}
+          initialRegion={defaultRegion}
+          initialGenres={defaultGenres}
+          initialProviders={defaultProviders}
+          initialMedia="both"
+        />
+      </div>
+    );
+  }
+
+  const mediaType: MediaType = media === "tv" ? "tv" : "movie";
+  const [genreRes, firstPage] = await Promise.all([
     getGenreMovieList(),
     discoverTitles({
-      mediaType: "movie" as MediaType,
-      region: regionParam,
+      mediaType,
+      region: regionForApi,
       genres: genreIds.length ? genreIds : undefined,
       providers: providerIds.length ? providerIds : undefined,
       page: 1,
+      sortBy: mediaType === "tv" ? "first_air_date.desc" : "release_date.desc",
+      primaryReleaseDateGte,
+      primaryReleaseDateLte,
+      firstAirDateGte,
+      firstAirDateLte,
     }),
   ]);
 
-  const rawResults = page.results ?? [];
+  const rawResults = firstPage.results ?? [];
   const items = rawResults.slice(0, 24).map((it) => ({
     ...it,
-    media_type: (it.media_type ?? "movie") as MediaType,
+    media_type: (it.media_type ?? mediaType) as MediaType,
   }));
   const genres = genreRes.genres ?? [];
 
@@ -67,6 +144,7 @@ export default async function DiscoverPage(props: {
         initialRegion={defaultRegion}
         initialGenres={defaultGenres}
         initialProviders={defaultProviders}
+        initialMedia={media}
       />
     </div>
   );

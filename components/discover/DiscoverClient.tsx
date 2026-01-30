@@ -17,12 +17,15 @@ type DiscoverItem = {
   vote_average?: number;
 };
 
+type MediaFilter = "movie" | "tv" | "both";
+
 type Props = {
   items: DiscoverItem[];
   genres: TmdbGenre[];
   initialRegion: string;
   initialGenres: number[];
   initialProviders?: number[];
+  initialMedia: MediaFilter;
 };
 
 export function DiscoverClient({
@@ -31,17 +34,25 @@ export function DiscoverClient({
   initialRegion,
   initialGenres,
   initialProviders = [],
+  initialMedia,
 }: Props) {
   const searchParams = useSearchParams();
-  const region = searchParams.get("region") || initialRegion;
+  const region = searchParams.get("region") ?? initialRegion;
+  const regionForApi = region || "AR";
+  const mediaParam = searchParams.get("media");
+  const media: MediaFilter =
+    mediaParam === "tv" ? "tv" : mediaParam === "movie" ? "movie" : "both";
   const genreIds = searchParams.getAll("genres").map(Number).filter(Number.isFinite);
   const providerIds = searchParams.getAll("providers").map(Number).filter(Number.isFinite);
+  const yearFrom = searchParams.get("year_from") ?? "";
+  const yearTo = searchParams.get("year_to") ?? "";
 
   const [items, setItems] = useState<DiscoverItem[]>(initialItems);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState<{ mediaType: MediaType; id: number } | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   // Deduplicar por (media_type, id) para no repetir títulos.
@@ -56,8 +67,8 @@ export function DiscoverClient({
     });
   }
 
-  // Al cambiar región, géneros o plataformas en la URL, reiniciar con los items que mandó el servidor (ya deduplicados).
-  const filterKey = `${region}-${genreIds.join(",")}-${providerIds.join(",")}`;
+  // Al cambiar región, géneros, plataformas, tipo (media) o años en la URL, reiniciar con los items que mandó el servidor (ya deduplicados).
+  const filterKey = `${region}-${media}-${genreIds.join(",")}-${providerIds.join(",")}-${yearFrom}-${yearTo}`;
   useEffect(() => {
     setItems(dedupeItems(initialItems));
     setPage(1);
@@ -68,7 +79,7 @@ export function DiscoverClient({
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
     const nextPage = page + 1;
-    const cacheKey = `discover:${region}:${[...genreIds].sort().join(",")}:${[...providerIds].sort().join(",")}:${nextPage}`;
+    const cacheKey = `discover:${region}:${media}:${[...genreIds].sort().join(",")}:${[...providerIds].sort().join(",")}:${yearFrom}:${yearTo}:${nextPage}`;
     const cached = cacheGet<{ results: DiscoverItem[]; total_pages: number }>(cacheKey);
 
     if (cached) {
@@ -90,8 +101,11 @@ export function DiscoverClient({
     try {
       const params = new URLSearchParams({
         page: String(nextPage),
-        region,
+        region: regionForApi,
       });
+      if (media !== "both") params.set("media", media);
+      if (yearFrom) params.set("year_from", yearFrom);
+      if (yearTo) params.set("year_to", yearTo);
       genreIds.forEach((id) => params.append("genres", String(id)));
       providerIds.forEach((id) => params.append("providers", String(id)));
       const res = await fetch(`/api/discover?${params.toString()}`);
@@ -119,7 +133,7 @@ export function DiscoverClient({
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, page, region, genreIds, providerIds]);
+  }, [loading, hasMore, page, region, media, genreIds, providerIds, yearFrom, yearTo]);
 
   // Observer: preload cuando el usuario se acerca al final para experiencia fluida.
   useEffect(() => {
@@ -144,8 +158,10 @@ export function DiscoverClient({
         initialRegion={initialRegion}
         initialGenres={initialGenres}
         initialProviders={initialProviders}
+        sidebarOpen={sidebarOpen}
+        onSidebarToggle={() => setSidebarOpen((o) => !o)}
       />
-      <div className="max-w-[1400px] mx-auto px-4 py-6 lg:pr-56">
+      <div className={`max-w-[1400px] mx-auto px-4 py-6 ${sidebarOpen ? "lg:pr-56" : ""}`}>
         {/* Grilla con celdas fijas de 160px para que todos los pósteres tengan el mismo tamaño (160×240) */}
         <div className="grid grid-cols-[repeat(auto-fill,160px)] justify-center gap-4">
           {list.map((it, index) => {
@@ -163,7 +179,7 @@ export function DiscoverClient({
                   title={title}
                   posterPath={it.poster_path ?? null}
                   onSelect={() => setModal({ mediaType, id: it.id })}
-                  region={region}
+                  region={regionForApi}
                 />
               </div>
             );
@@ -183,7 +199,7 @@ export function DiscoverClient({
           mediaType={modal.mediaType}
           id={modal.id}
           onClose={() => setModal(null)}
-          region={region}
+          region={regionForApi}
         />
       )}
     </>

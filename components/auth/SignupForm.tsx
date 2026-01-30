@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { PasswordField, TextField } from "@/components/auth/AuthFields";
+import { SubmitButton } from "@/components/auth/SubmitButton";
+import { UserPlus } from "lucide-react";
 
 type Props = {
   signupAction: (formData: FormData) => void;
@@ -71,6 +73,9 @@ export function SignupForm({ signupAction }: Props) {
           ? "Las contraseñas no coinciden."
           : "La contraseña debe tener al menos 8 caracteres e incluir mayúsculas, minúsculas y números."}
       </p>
+      <SubmitButton icon={<UserPlus size={18} aria-hidden="true" />}>
+        Crear cuenta
+      </SubmitButton>
     </form>
   );
 }

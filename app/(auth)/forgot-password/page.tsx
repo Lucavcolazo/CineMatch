@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { TextField } from "@/components/auth/AuthFields";
+import { SubmitButton } from "@/components/auth/SubmitButton";
 import { ArrowLeft, Send } from "lucide-react";
 
 export default async function ForgotPasswordPage(props: {
@@ -36,7 +37,7 @@ export default async function ForgotPasswordPage(props: {
 
   return (
     <div className="min-h-screen grid place-items-center p-7 pt-20 bg-black">
-      <div className="w-full max-w-[700px] border border-white/10 rounded-2xl p-6 bg-black text-white shadow-xl">
+      <div className="w-full max-w-[700px] border border-white/20 rounded-2xl p-6 bg-black/30 backdrop-blur-xl text-white shadow-xl">
         <div className="flex flex-col gap-1.5 mb-3">
           <h1 className="text-3xl font-semibold tracking-tight text-white">Recuperar contraseña</h1>
           <p className="text-white/85 text-[15px] leading-relaxed">
@@ -60,13 +61,9 @@ export default async function ForgotPasswordPage(props: {
             autoComplete="email"
             icon="mail"
           />
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center gap-2 py-3 px-3.5 rounded-xl border border-white/30 bg-white text-black font-medium shadow-lg transition-all hover:brightness-105 active:translate-y-px"
-          >
-            <Send size={18} aria-hidden="true" />
+          <SubmitButton icon={<Send size={18} aria-hidden="true" />}>
             Enviar enlace
-          </button>
+          </SubmitButton>
         </form>
 
         <div className="h-3.5" />

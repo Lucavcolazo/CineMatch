@@ -7,6 +7,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useEffect, useRef, useState } from "react";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { cacheGet, cacheSet, cacheRemove, PROFILE_CACHE_KEY, PROFILE_CACHE_TTL_MS } from "@/lib/cache";
+import StarBorder from "@/components/ui/StarBorder";
 
 type Profile = {
   avatar_url: string | null;
@@ -107,9 +108,15 @@ export function Navbar() {
     return () => {};
   }, []);
 
-  // Al entrar a /profile, invalidar caché y refrescar perfil en navbar.
+  // Al entrar a rutas de app (p. ej. /discover tras login), refrescar perfil para que aparezca sin recargar.
   useEffect(() => {
-    if (pathname === "/profile") {
+    const isAppRoute =
+      pathname.startsWith("/discover") ||
+      pathname.startsWith("/recommendations") ||
+      pathname.startsWith("/search") ||
+      pathname.startsWith("/profile") ||
+      pathname.startsWith("/title");
+    if (isAppRoute) {
       cacheRemove(PROFILE_CACHE_KEY);
       refetchProfileRef.current?.();
     }
@@ -121,20 +128,14 @@ export function Navbar() {
         left: null,
         right: null,
         actions: (
-          <>
-            <Link
-              className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium border border-white/30 bg-white text-black hover:bg-white/90 transition-colors"
-              href="/login"
-            >
+          <div className="flex items-center gap-2.5">
+            <StarBorder as={Link} href="/login" color="white" speed="2s">
               Iniciar sesión
-            </Link>
-            <Link
-              className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium bg-white text-black border border-white hover:bg-white/90 transition-colors"
-              href="/signup"
-            >
+            </StarBorder>
+            <StarBorder as={Link} href="/signup" color="white" speed="2s">
               Registrarse
-            </Link>
-          </>
+            </StarBorder>
+          </div>
         ),
       };
     }
@@ -163,6 +164,9 @@ export function Navbar() {
     if (pathname.startsWith("/discover")) {
       return { left: null, right: null, actions: appActions };
     }
+    if (pathname.startsWith("/recommendations")) {
+      return { left: null, right: null, actions: appActions };
+    }
     if (pathname.startsWith("/search")) {
       return { left: { href: "/discover", label: "Descubrir" }, right: null, actions: appActions };
     }
@@ -185,18 +189,22 @@ export function Navbar() {
   const isLanding = pathname === "/";
   const isAppPage =
     pathname.startsWith("/discover") ||
+    pathname.startsWith("/recommendations") ||
     pathname.startsWith("/search") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/title");
 
   const navDark = isLanding || isAuthPage || isAppPage;
-  const navBg = navDark ? "bg-black border-white/10" : "bg-white border-black/10 shadow-sm";
+  // Barra fija arriba al hacer scroll; en app/landing: glass (blur + semitransparente) para que se integre con el contenido.
+  const navBg = navDark
+    ? "bg-black/70 backdrop-blur-xl border-b border-white/[0.06]"
+    : "bg-white/90 backdrop-blur-xl border-b border-black/5 shadow-sm";
   const brandColor = navDark ? "text-white hover:opacity-80" : "text-black hover:opacity-70";
   const navBtnBase = "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors";
   const navBtnStyle =
     navDark
-      ? "border border-white/20 text-white hover:bg-white/10"
-      : "border border-black/15 text-black hover:bg-black/5";
+      ? "text-white/90 hover:text-white hover:bg-white/10"
+      : "text-black/80 hover:text-black hover:bg-black/5";
 
   return (
     <>
@@ -208,12 +216,13 @@ export function Navbar() {
           <code className="bg-black/20 px-1 rounded">npm run dev</code>.
         </div>
       )}
-      <nav className={`fixed top-0 left-0 right-0 z-[1000] border-b ${navBg}`}>
-      <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <nav className={`fixed top-0 left-0 right-0 z-[1000] ${navBg}`}>
+      <div className="max-w-[1400px] mx-auto px-5 py-2.5 flex items-center justify-between gap-4 relative">
+        <div className="flex items-center gap-4 flex-shrink-0">
           <Link
             href={
               pathname.startsWith("/discover") ||
+              pathname.startsWith("/recommendations") ||
               pathname.startsWith("/search") ||
               pathname.startsWith("/profile") ||
               pathname.startsWith("/title")
@@ -227,13 +236,42 @@ export function Navbar() {
             <Popcorn size={22} aria-hidden="true" />
             <span>CineMatch</span>
           </Link>
-          {options.left ? (
+          {options.left && !isAppPage ? (
             <Link href={options.left.href} className={`${navBtnBase} ${navBtnStyle}`}>
               <ArrowLeft size={18} aria-hidden="true" />
               <span>{options.left.label}</span>
             </Link>
           ) : null}
         </div>
+
+        {isAppPage ? (
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-8">
+            <Link
+              href="/discover"
+              className={`text-sm font-medium transition-all ${
+                pathname.startsWith("/discover")
+                  ? "text-white nav-tab-active-glow"
+                  : navDark
+                    ? "text-white/60 hover:text-white/90"
+                    : "text-black/60 hover:text-black/90"
+              }`}
+            >
+              Descubrir
+            </Link>
+            <Link
+              href="/recommendations"
+              className={`text-sm font-medium transition-all ${
+                pathname.startsWith("/recommendations")
+                  ? "text-white nav-tab-active-glow"
+                  : navDark
+                    ? "text-white/60 hover:text-white/90"
+                    : "text-black/60 hover:text-black/90"
+              }`}
+            >
+              Recomendaciones
+            </Link>
+          </div>
+        ) : null}
 
         {options.actions ? (
           <div className="flex items-center gap-2.5 flex-shrink-0">{options.actions}</div>

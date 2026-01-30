@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, Check } from "lucide-react";
 import type { MediaType } from "@/lib/tmdb";
+import { getWatchedStatus, toggleWatched } from "@/lib/actions/user";
 
 type WatchProvider = { provider_id: number; provider_name: string };
 
@@ -40,6 +41,14 @@ export function TitleModal({ mediaType, id, onClose, region = "AR" }: Props) {
   const [data, setData] = useState<TmdbTitleDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isWatched, setIsWatched] = useState(false);
+  const [watchedLoading, setWatchedLoading] = useState(false);
+
+  // Cargar estado "La vi" al abrir el modal
+  useEffect(() => {
+    if (!id || !mediaType) return;
+    getWatchedStatus({ tmdbId: id, mediaType }).then(setIsWatched);
+  }, [id, mediaType]);
 
   useEffect(() => {
     const type = mediaType === "movie" || mediaType === "tv" ? mediaType : "movie";
@@ -95,20 +104,20 @@ export function TitleModal({ mediaType, id, onClose, region = "AR" }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xl"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
     >
       <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl"
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900/80 backdrop-blur-xl shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 rounded-full p-2 bg-black/50 text-white hover:bg-white/20 transition-colors"
+          className="absolute top-4 right-4 z-10 rounded-full p-2 bg-black/40 backdrop-blur-sm text-white hover:bg-white/20 transition-colors"
           aria-label="Cerrar"
         >
           <X size={24} />
@@ -146,6 +155,37 @@ export function TitleModal({ mediaType, id, onClose, region = "AR" }: Props) {
                 {year ? ` · ${year}` : ""}
                 {duration ? ` · ${duration}` : ""}
               </p>
+
+              {/* Botón "La vi": relleno cuando está marcado, solo borde cuando no. Actualización optimista al hacer clic. */}
+              <div className="mb-4">
+                <button
+                  type="button"
+                  disabled={watchedLoading}
+                  onClick={async () => {
+                    setWatchedLoading(true);
+                    const next = !isWatched;
+                    setIsWatched(next);
+                    await toggleWatched({ tmdbId: id, mediaType });
+                    const actual = await getWatchedStatus({ tmdbId: id, mediaType });
+                    setIsWatched(actual);
+                    setWatchedLoading(false);
+                  }}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                    isWatched
+                      ? "border-emerald-400 bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                      : "border-white/30 bg-transparent text-white hover:bg-white/10"
+                  }`}
+                >
+                  <span
+                    className={`flex items-center justify-center w-6 h-6 rounded-full border-2 shrink-0 ${
+                      isWatched ? "border-white bg-white/20" : "border-white/60"
+                    }`}
+                  >
+                    <Check size={14} strokeWidth={3} className={isWatched ? "text-white" : "text-white/50"} />
+                  </span>
+                  {isWatched ? "La vi" : "Marcar como vista"}
+                </button>
+              </div>
 
               {data.vote_average != null && (
                 <p className="text-white/80 text-sm mb-4">

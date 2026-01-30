@@ -72,9 +72,9 @@ export function ProfileDropdown({ profile, userEmail, navDark }: Props) {
     (userEmail && userEmail.split("@")[0]) ||
     "Invitado";
 
-  const btnClass = navDark
-    ? "border border-white/20 text-white hover:bg-white/10"
-    : "border border-black/15 text-black hover:bg-black/5";
+  const triggerClass = navDark
+    ? "text-white/80 hover:text-white"
+    : "text-black/80 hover:text-black";
 
   const AvatarIcon = getAvatarIconComponent(profile?.avatar_icon ?? null);
   const bubbleColor = profile?.avatar_color || "#6366f1";
@@ -84,7 +84,7 @@ export function ProfileDropdown({ profile, userEmail, navDark }: Props) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 ${btnClass} transition-colors shrink-0 max-w-[220px]`}
+        className={`inline-flex items-center gap-2 py-1.5 ${triggerClass} transition-colors shrink-0 max-w-[220px]`}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Menú de perfil"

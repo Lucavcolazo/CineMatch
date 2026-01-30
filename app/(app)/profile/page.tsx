@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getGenreMovieList } from "@/lib/tmdb";
+import { getWatchedCount } from "@/lib/actions/user";
 import { AvatarSection } from "@/components/profile/AvatarSection";
 import { ProfileNameForm } from "@/components/profile/ProfileNameForm";
 import { ProfilePreferencesForm } from "@/components/profile/ProfilePreferencesForm";
@@ -24,7 +25,7 @@ export default async function ProfilePage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const regions = (prefs?.regions as string[] | null) ?? (prefs?.region ? [prefs.region as string] : ["AR"]);
+  const regions = (prefs?.regions as string[] | null) ?? (prefs?.region ? [prefs.region as string] : []);
   const genres = (prefs?.genres as number[]) ?? [];
   const providers = (prefs?.providers as number[]) ?? [];
   const displayName = (profile?.display_name as string) ?? "";
@@ -33,6 +34,7 @@ export default async function ProfilePage() {
   const avatarColor = (profile?.avatar_color as string) ?? null;
 
   const { genres: genreList } = await getGenreMovieList();
+  const watchedCount = await getWatchedCount();
 
   return (
     <div className="min-h-screen bg-black text-white pt-[57px]">
@@ -67,12 +69,15 @@ export default async function ProfilePage() {
 
         <div className="border border-white/10 rounded-2xl p-6 bg-zinc-900/50 mb-6">
           <h2 className="text-xl font-semibold text-white mb-2">Perfil</h2>
+          <p className="text-white/70 text-sm mb-4">
+            Películas y series vistas: <strong className="text-white">{watchedCount}</strong>
+          </p>
           <div className="flex gap-3 flex-wrap items-center mt-4">
             <a
-              href="/profile/favorites"
+              href="/profile/watched"
               className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-white/20 text-white hover:bg-white/10 transition-colors"
             >
-              Ver favoritos
+              Ver vistas
             </a>
           </div>
         </div>

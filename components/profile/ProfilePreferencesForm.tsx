@@ -79,7 +79,7 @@ export function ProfilePreferencesForm({
     setSaving(true);
     try {
       await updatePreferences({
-        regions: regions.length ? regions : ["AR"],
+        regions,
         genres: genreIds,
         providers: providerIds,
         nextPath: "/profile",
@@ -93,7 +93,7 @@ export function ProfilePreferencesForm({
   const regionLabel =
     regions.length > 0
       ? regions.map((r) => REGIONES.find((x) => x.value === r)?.label ?? r).join(", ")
-      : "Elegir regiones";
+      : "Cualquiera";
 
   return (
     <div className="space-y-4">
@@ -157,7 +157,7 @@ export function ProfilePreferencesForm({
             <span className="truncate">
               {genreIds.length > 0
                 ? genreIds.map((id) => genres.find((g) => g.id === id)?.name ?? id).join(", ")
-                : "Elegir géneros"}
+                : "Cualquiera"}
             </span>
             <ChevronDown size={18} className={genreOpen ? "rotate-180" : ""} />
           </button>
@@ -204,7 +204,7 @@ export function ProfilePreferencesForm({
             <span className="truncate">
               {providerIds.length > 0
                 ? providerIds.map((id) => PLATFORMAS.find((p) => p.id === id)?.name ?? id).join(", ")
-                : "Qué plataformas uso"}
+                : "Cualquiera"}
             </span>
             <ChevronDown size={18} className={providerOpen ? "rotate-180" : ""} />
           </button>

@@ -94,14 +94,14 @@ export function AvatarIconModal({
 
   return (
     <div
-      className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xl"
       aria-modal="true"
       role="dialog"
       aria-labelledby="avatar-modal-title"
     >
       <div
         ref={ref}
-        className="bg-zinc-900 border border-white/20 rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        className="bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-white/10">

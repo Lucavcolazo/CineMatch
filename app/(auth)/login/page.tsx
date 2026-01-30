@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PasswordField, TextField } from "@/components/auth/AuthFields";
+import { SubmitButton } from "@/components/auth/SubmitButton";
 import { LogIn } from "lucide-react";
 
 export default async function LoginPage(props: {
@@ -29,7 +30,7 @@ export default async function LoginPage(props: {
 
   return (
     <div className="min-h-screen grid place-items-center p-7 pt-20 bg-black">
-      <div className="w-full max-w-[700px] border border-white/10 rounded-2xl p-6 bg-black text-white shadow-xl">
+      <div className="w-full max-w-[700px] border border-white/20 rounded-2xl p-6 bg-black/30 backdrop-blur-xl text-white shadow-xl">
         <div className="flex flex-col gap-1.5 mb-3">
           <h1 className="text-3xl font-semibold tracking-tight text-white">Bienvenido</h1>
           <p className="text-white/85 text-[15px] leading-relaxed">Iniciá sesión para seguir descubriendo.</p>
@@ -58,13 +59,9 @@ export default async function LoginPage(props: {
             autoComplete="current-password"
             icon="lock"
           />
-          <button
-            type="submit"
-            className="inline-flex items-center justify-center gap-2 py-3 px-3.5 rounded-xl border border-white/30 bg-white text-black font-medium shadow-lg transition-all hover:brightness-105 active:translate-y-px"
-          >
-            <LogIn size={18} aria-hidden="true" />
+          <SubmitButton icon={<LogIn size={18} aria-hidden="true" />}>
             Entrar
-          </button>
+          </SubmitButton>
         </form>
 
         <div className="h-3.5" />

@@ -77,7 +77,7 @@ export function SearchClient() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-[57px]">
-      <div className="sticky top-[57px] z-[999] border-b border-white/10 bg-black/95 backdrop-blur-sm px-4 py-3">
+      <div className="sticky top-[57px] z-[999] border-b border-white/[0.06] bg-black/70 backdrop-blur-xl px-4 py-3">
         <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-wrap items-center gap-2">
             <form onSubmit={(e) => e.preventDefault()} className="relative flex items-center flex-1 min-w-[200px]">

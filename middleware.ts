@@ -34,6 +34,7 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isPrivate = pathname.startsWith("/discover") ||
+    pathname.startsWith("/recommendations") ||
     pathname.startsWith("/search") ||
     pathname.startsWith("/title") ||
     pathname.startsWith("/profile");
