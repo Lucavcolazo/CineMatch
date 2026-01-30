@@ -30,7 +30,7 @@ export default async function LoginPage(props: {
 
   return (
     <div className="min-h-screen grid place-items-center p-7 pt-20 bg-black">
-      <div className="w-full max-w-[700px] border border-white/20 rounded-2xl p-6 bg-black/30 backdrop-blur-xl text-white shadow-xl">
+      <div className="w-full max-w-[480px] border border-white/20 rounded-2xl p-6 bg-black/30 backdrop-blur-xl text-white shadow-xl">
         <div className="flex flex-col gap-1.5 mb-3">
           <h1 className="text-3xl font-semibold tracking-tight text-white">Bienvenido</h1>
           <p className="text-white/85 text-[15px] leading-relaxed">Iniciá sesión para seguir descubriendo.</p>

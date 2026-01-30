@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { discoverTitles, type MediaType } from "@/lib/tmdb";
+import { getRecommendations, type MediaType } from "@/lib/tmdb";
 
 /**
  * GET /api/recommendations?page=1
- * Devuelve una página de recomendaciones basadas en las preferencias del usuario (movie + tv combinados).
+ * Devuelve una página de recomendaciones basadas en los títulos que el usuario marcó como vistos.
  * Requiere sesión.
  */
 export async function GET(request: Request) {
@@ -20,53 +20,58 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const pageParam = searchParams.get("page");
   const page = Math.max(1, Number(pageParam) || 1);
-  const fallback = searchParams.get("fallback") === "1";
 
-  const { data: prefs } = await supabase
-    .from("preferences")
-    .select("region, regions, genres, providers")
+  const { data: watchedRows } = await supabase
+    .from("watched")
+    .select("tmdb_id, media_type")
     .eq("user_id", user.id)
-    .maybeSingle();
+    .order("created_at", { ascending: false })
+    .limit(10);
 
-  const regions = (prefs?.regions as string[] | null) ?? (prefs?.region ? [prefs.region as string] : ["AR"]);
-  const region = regions[0] ?? "AR";
-  const genreIds = fallback ? [] : ((prefs?.genres as number[]) || []);
-  const providerIds = fallback ? [] : ((prefs?.providers as number[]) || []);
+  if (!watchedRows?.length) {
+    return NextResponse.json({
+      results: [],
+      page: 1,
+      total_pages: 1,
+    });
+  }
+
+  const watchedKeys = new Set(
+    watchedRows.map((r) => `${r.media_type}-${r.tmdb_id}`)
+  );
+  const seenKeys = new Set<string>(watchedKeys);
+  const results: { id: number; media_type: MediaType; title?: string; name?: string; poster_path?: string | null; vote_average?: number }[] = [];
 
   try {
-    // fallback=1: solo región. Si no: películas con géneros+plataformas, TV solo plataformas.
-    const [movieRes, tvRes] = await Promise.all([
-      discoverTitles({
-        mediaType: "movie",
-        region,
-        genres: genreIds.length ? genreIds : undefined,
-        providers: providerIds.length ? providerIds : undefined,
-        page,
-      }),
-      discoverTitles({
-        mediaType: "tv",
-        region,
-        genres: undefined,
-        providers: providerIds.length ? providerIds : undefined,
-        page,
-      }),
-    ]);
+    const recs = await Promise.allSettled(
+      watchedRows.map((row) =>
+        getRecommendations(row.media_type as MediaType, row.tmdb_id, page)
+      )
+    );
 
-    const movies = (movieRes.results ?? []).slice(0, 12).map((it) => ({
-      ...it,
-      media_type: "movie" as const,
-    }));
-    const tvs = (tvRes.results ?? []).slice(0, 12).map((it) => ({
-      ...it,
-      media_type: "tv" as const,
-    }));
-    const results = [...movies, ...tvs];
-    const total_pages = Math.max(movieRes.total_pages ?? 1, tvRes.total_pages ?? 1);
+    for (const r of recs) {
+      if (r.status !== "fulfilled" || !r.value?.results) continue;
+      for (const it of (r.value.results as { id: number; media_type?: string; title?: string; name?: string; poster_path?: string | null; vote_average?: number }[]).slice(0, 8)) {
+        const mt = it.media_type === "movie" || it.media_type === "tv" ? it.media_type : null;
+        if (!mt) continue;
+        const key = `${mt}-${it.id}`;
+        if (seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        results.push({
+          id: it.id,
+          media_type: mt,
+          title: it.title,
+          name: it.name,
+          poster_path: it.poster_path ?? null,
+          vote_average: it.vote_average,
+        });
+      }
+    }
 
     return NextResponse.json({
       results,
       page,
-      total_pages,
+      total_pages: results.length > 0 ? Math.max(page + 1, 10) : 1,
     });
   } catch (e) {
     return NextResponse.json(

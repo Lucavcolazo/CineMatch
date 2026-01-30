@@ -11,7 +11,7 @@ export default async function IngresaPage() {
 
   return (
     <div className="min-h-screen grid place-items-center p-7 pt-20 bg-black">
-      <div className="w-full max-w-[420px] border border-white/20 rounded-2xl p-6 bg-black/30 backdrop-blur-xl text-white shadow-xl">
+      <div className="w-full max-w-[380px] border border-white/20 rounded-2xl p-6 bg-black/30 backdrop-blur-xl text-white shadow-xl">
         <div className="flex flex-col gap-1.5 mb-2">
           <h1 className="text-2xl font-semibold tracking-tight text-white">
             Ingresá a CineMatch

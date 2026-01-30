@@ -33,6 +33,8 @@ export type TmdbTitleDetails = {
   first_air_date?: string;
   runtime?: number; // películas, en minutos
   episode_run_time?: number[]; // series, duración por episodio
+  number_of_seasons?: number;
+  number_of_episodes?: number;
 };
 
 export type TmdbProvider = {
@@ -103,11 +105,33 @@ export async function getWatchProviders(
   return tmdbFetch(`/${mediaType}/${id}/watch/providers`);
 }
 
-export async function getRecommendations(
+/** Respuesta de TMDB /movie/{id}/videos o /tv/{id}/videos */
+type TmdbVideosResponse = {
+  id: number;
+  results?: { key?: string; site?: string; type?: string; name?: string }[];
+};
+
+export async function getTitleVideos(
   mediaType: MediaType,
   id: number
+): Promise<TmdbVideosResponse> {
+  return tmdbFetch(`/${mediaType}/${id}/videos`);
+}
+
+/** Devuelve la key del primer trailer de YouTube en la respuesta de videos, o null. */
+export function getFirstTrailerKey(videos: TmdbVideosResponse): string | null {
+  const first = videos.results?.find(
+    (v) => v.site === "YouTube" && (v.type === "Trailer" || v.type === "Teaser") && v.key
+  );
+  return first?.key ?? null;
+}
+
+export async function getRecommendations(
+  mediaType: MediaType,
+  id: number,
+  page = 1
 ): Promise<TmdbPagedResponse<TmdbSearchResult>> {
-  return tmdbFetch(`/${mediaType}/${id}/recommendations`);
+  return tmdbFetch(`/${mediaType}/${id}/recommendations`, { page: String(page) });
 }
 
 export type TmdbGenre = { id: number; name: string };

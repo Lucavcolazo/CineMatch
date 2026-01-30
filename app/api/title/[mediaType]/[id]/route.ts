@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getTitleDetails, getWatchProviders, type MediaType } from "@/lib/tmdb";
+import { getTitleDetails, getTitleVideos, getWatchProviders, getFirstTrailerKey, type MediaType } from "@/lib/tmdb";
 import type { TmdbProvider } from "@/lib/tmdb";
 
 function pickProvidersForRegion(
@@ -27,13 +27,16 @@ export async function GET(
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
   try {
-    const [details, watch] = await Promise.all([
+    const [details, watch, videos] = await Promise.all([
       getTitleDetails(mediaType as MediaType, numId),
       getWatchProviders(mediaType as MediaType, numId),
+      getTitleVideos(mediaType as MediaType, numId),
     ]);
     const { flatrate, rent, buy } = pickProvidersForRegion(watch, region);
+    const trailer_key = getFirstTrailerKey(videos);
     return NextResponse.json({
       ...details,
+      trailer_key: trailer_key ?? undefined,
       watch_providers: {
         flatrate: flatrate.map((p) => ({ provider_id: p.provider_id, provider_name: p.provider_name })),
         rent: rent.map((p) => ({ provider_id: p.provider_id, provider_name: p.provider_name })),

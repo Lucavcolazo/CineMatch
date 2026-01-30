@@ -84,7 +84,7 @@ export function ProfileDropdown({ profile, userEmail, navDark }: Props) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`inline-flex items-center gap-2 py-1.5 ${triggerClass} transition-colors shrink-0 max-w-[220px]`}
+        className={`inline-flex items-center justify-center p-1 rounded-full ${triggerClass} transition-colors shrink-0 focus:ring-2 focus:ring-white/30 focus:ring-offset-2 focus:ring-offset-transparent`}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label="Menú de perfil"
@@ -93,24 +93,26 @@ export function ProfileDropdown({ profile, userEmail, navDark }: Props) {
           <img
             src={profile.avatar_url}
             alt=""
-            className="w-7 h-7 rounded-full object-cover shrink-0"
+            className="w-8 h-8 rounded-full object-cover shrink-0 sm:w-7 sm:h-7"
           />
         ) : (
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white"
+            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white sm:w-7 sm:h-7"
             style={{ backgroundColor: bubbleColor }}
           >
-            <AvatarIcon size={14} strokeWidth={2} />
+            <AvatarIcon size={16} strokeWidth={2} className="sm:w-[14px] sm:h-[14px]" />
           </div>
         )}
-        <span className="truncate text-sm font-medium">{displayName}</span>
-        <ChevronDown size={18} className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
       </button>
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 rounded-lg border border-white/20 bg-zinc-900 shadow-xl py-1 min-w-[180px] z-[1001]"
+          className="absolute right-0 top-full mt-2 rounded-lg border border-white/20 bg-zinc-900 shadow-xl py-1 min-w-[200px] z-[1001]"
           role="menu"
         >
+          <div className="px-4 py-2.5 border-b border-white/10">
+            <p className="text-sm font-medium text-white truncate" title={displayName}>{displayName}</p>
+            <p className="text-xs text-white/50 truncate" title={userEmail}>{userEmail}</p>
+          </div>
           <Link
             href="/profile"
             onClick={() => setOpen(false)}

@@ -19,20 +19,11 @@ type RecommendationItem = {
 type Props = {
   initialItems: RecommendationItem[];
   region: string;
-  regionLabel: string;
-  genreNames: string[];
-  providerNames: string[];
-  /** true cuando no hubo resultados con los filtros y se mostraron tendencias solo por región */
-  isFallbackResults?: boolean;
 };
 
 export function RecommendationsClient({
   initialItems,
   region,
-  regionLabel,
-  genreNames,
-  providerNames,
-  isFallbackResults = false,
 }: Props) {
   const [items, setItems] = useState<RecommendationItem[]>(initialItems);
   const [page, setPage] = useState(1);
@@ -54,7 +45,7 @@ export function RecommendationsClient({
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
     const nextPage = page + 1;
-    const cacheKey = `recommendations:${nextPage}:${isFallbackResults ? "fallback" : "prefs"}`;
+    const cacheKey = `recommendations:watched:${nextPage}`;
     const cached = cacheGet<{ results: RecommendationItem[]; total_pages: number }>(cacheKey);
 
     if (cached) {
@@ -70,10 +61,7 @@ export function RecommendationsClient({
 
     setLoading(true);
     try {
-      const url = isFallbackResults
-        ? `/api/recommendations?page=${nextPage}&fallback=1`
-        : `/api/recommendations?page=${nextPage}`;
-      const res = await fetch(url);
+      const res = await fetch(`/api/recommendations?page=${nextPage}`);
       if (!res.ok) throw new Error("Error al cargar");
       const data = await res.json();
       const newResults = (data.results ?? []) as RecommendationItem[];
@@ -89,12 +77,13 @@ export function RecommendationsClient({
       });
       setPage(nextPage);
       setHasMore(nextPage < (data.total_pages ?? 1));
+      if (newResults.length === 0) setHasMore(false);
     } catch {
       setHasMore(false);
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore, page, isFallbackResults]);
+  }, [loading, hasMore, page]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -114,65 +103,52 @@ export function RecommendationsClient({
   return (
     <>
       <div className="max-w-[896px] mx-auto px-4 py-6">
-        <h1 className="text-xl font-semibold text-white mb-4">Recomendaciones</h1>
-        <div className="flex flex-wrap items-center gap-2 mb-4 text-sm text-white/80">
-          <span className="font-medium text-white/90">Preferencias:</span>
-          <span>{regionLabel}</span>
-          <span aria-hidden>·</span>
-          <span>{genreNames.length > 0 ? genreNames.join(", ") : "Cualquiera"}</span>
-          <span aria-hidden>·</span>
-          <span>{providerNames.length > 0 ? providerNames.join(", ") : "Cualquiera"}</span>
-        </div>
-        {isFallbackResults && (
-          <p className="mb-6 text-sm text-amber-200/90 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-2">
-            No encontramos títulos con tus filtros exactos. Mostrando tendencias en tu región.
-          </p>
-        )}
-        {/* Grid fijo de 5 columnas de 160px en desktop; en móvil 2–3 columnas para no desbordar */}
         {list.length === 0 ? (
           <div className="text-center py-12 text-white/80">
-            <p className="mb-4">No encontramos títulos con esos filtros.</p>
+            <p className="mb-4">Aún no hay recomendaciones.</p>
             <p className="text-sm text-white/60 mb-6">
-              Probá ampliar géneros o plataformas en tu perfil para ver más recomendaciones.
+              Marcá películas o series como vistas en Descubrir para ver sugerencias basadas en lo que viste.
             </p>
             <Link
-              href="/profile"
+              href="/discover"
               className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium bg-white text-black hover:bg-white/90 transition-colors"
             >
-              Ir al perfil
+              Ir a Descubrir
             </Link>
           </div>
         ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(5,160px)] justify-center gap-4 max-w-[896px] mx-auto">
-          {list.map((it, index) => {
-            const title = it.title ?? it.name ?? "Sin título";
-            return (
-              <div
-                key={`${it.media_type}-${it.id}-${index}`}
-                className="animate-discover-card"
-                style={{ animationDelay: `${index * 32}ms` }}
-              >
-                <TitleCard
-                  id={it.id}
-                  mediaType={it.media_type}
-                  title={title}
-                  posterPath={it.poster_path ?? null}
-                  onSelect={() => setModal({ mediaType: it.media_type, id: it.id })}
-                  region={region}
-                />
-              </div>
-            );
-          })}
-        </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[repeat(5,160px)] justify-center gap-4 max-w-[896px] mx-auto">
+              {list.map((it, index) => {
+                const title = it.title ?? it.name ?? "Sin título";
+                return (
+                  <div
+                    key={`${it.media_type}-${it.id}-${index}`}
+                    className="animate-discover-card"
+                    style={{ animationDelay: `${index * 32}ms` }}
+                  >
+                    <TitleCard
+                      id={it.id}
+                      mediaType={it.media_type}
+                      title={title}
+                      posterPath={it.poster_path ?? null}
+                      onSelect={() => setModal({ mediaType: it.media_type, id: it.id })}
+                      region={region}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+            <div ref={sentinelRef} className="h-16 flex items-center justify-center py-4" aria-hidden>
+              {loading && (
+                <div className="h-0.5 w-20 rounded-full bg-white/15 animate-pulse" aria-hidden />
+              )}
+              {!hasMore && items.length > 0 && (
+                <span className="text-white/40 text-xs">No hay más títulos</span>
+              )}
+            </div>
+          </>
         )}
-        <div ref={sentinelRef} className="h-16 flex items-center justify-center py-4" aria-hidden>
-          {loading && (
-            <div className="h-0.5 w-20 rounded-full bg-white/15 animate-pulse" aria-hidden />
-          )}
-          {!hasMore && items.length > 0 && (
-            <span className="text-white/40 text-xs">No hay más títulos</span>
-          )}
-        </div>
       </div>
       {modal && (
         <TitleModal

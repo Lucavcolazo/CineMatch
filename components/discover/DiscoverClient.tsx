@@ -26,6 +26,12 @@ type Props = {
   initialGenres: number[];
   initialProviders?: number[];
   initialMedia: MediaFilter;
+  /** Ruta base para los query params (ej. "/" en landing, "/discover" en discover). */
+  basePath?: string;
+  /** Si se muestra la barra de búsqueda (en landing no). */
+  showSearch?: boolean;
+  /** Si se muestra el filtro País (en landing no, solo en discover). */
+  showRegionFilter?: boolean;
 };
 
 export function DiscoverClient({
@@ -35,6 +41,9 @@ export function DiscoverClient({
   initialGenres,
   initialProviders = [],
   initialMedia,
+  basePath = "/discover",
+  showSearch = true,
+  showRegionFilter = true,
 }: Props) {
   const searchParams = useSearchParams();
   const region = searchParams.get("region") ?? initialRegion;
@@ -53,7 +62,9 @@ export function DiscoverClient({
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState<{ mediaType: MediaType; id: number } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [filtersSectionInView, setFiltersSectionInView] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const filtersSectionSentinelRef = useRef<HTMLDivElement>(null);
 
   // Deduplicar por (media_type, id) para no repetir títulos.
   function dedupeItems(arr: DiscoverItem[]): DiscoverItem[] {
@@ -75,6 +86,32 @@ export function DiscoverClient({
     setHasMore(true);
     setLoading(false);
   }, [filterKey, initialItems]);
+
+  // En la landing: restaurar posición de scroll tras cambiar filtros (evitar volver al top).
+  useEffect(() => {
+    if (basePath !== "/") return;
+    const raw = sessionStorage.getItem("landingScrollY");
+    if (raw === null) return;
+    sessionStorage.removeItem("landingScrollY");
+    const y = Number(raw);
+    if (!Number.isFinite(y)) return;
+    const id = requestAnimationFrame(() => {
+      window.scrollTo(0, y);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [basePath, filterKey]);
+
+  // En la landing: mostrar filtros solo cuando la sección "Descubrir películas" entra en el viewport.
+  useEffect(() => {
+    const el = filtersSectionSentinelRef.current;
+    if (!el || basePath !== "/") return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setFiltersSectionInView(entry?.isIntersecting ?? false),
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [basePath]);
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -151,8 +188,11 @@ export function DiscoverClient({
 
   const list = dedupeItems(items.filter((r) => r.media_type !== "person") as (DiscoverItem & { media_type: MediaType })[]);
 
+  const filtersVisible = basePath === "/" ? filtersSectionInView : true;
+
   return (
     <>
+      <div ref={filtersSectionSentinelRef} className="h-0 w-full" aria-hidden />
       <DiscoverFilters
         genres={genres}
         initialRegion={initialRegion}
@@ -160,8 +200,12 @@ export function DiscoverClient({
         initialProviders={initialProviders}
         sidebarOpen={sidebarOpen}
         onSidebarToggle={() => setSidebarOpen((o) => !o)}
+        basePath={basePath}
+        showSearch={showSearch}
+        filtersVisible={filtersVisible}
+        showRegionFilter={showRegionFilter}
       />
-      <div className={`max-w-[1400px] mx-auto px-4 py-6 ${sidebarOpen ? "lg:pr-56" : ""}`}>
+      <div className={`max-w-[1400px] mx-auto px-4 pt-6 pb-6 lg:py-6 ${sidebarOpen ? "lg:pr-56" : ""}`}>
         {/* Grilla con celdas fijas de 160px para que todos los pósteres tengan el mismo tamaño (160×240) */}
         <div className="grid grid-cols-[repeat(auto-fill,160px)] justify-center gap-4">
           {list.map((it, index) => {

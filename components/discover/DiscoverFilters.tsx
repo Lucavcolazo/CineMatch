@@ -29,14 +29,23 @@ type Props = {
   initialProviders?: number[];
   sidebarOpen?: boolean;
   onSidebarToggle?: () => void;
+  /** Ruta base para construir URLs (ej. "/" en landing, "/discover" en discover). */
+  basePath?: string;
+  /** Si se muestra la barra de búsqueda. */
+  showSearch?: boolean;
+  /** En landing: solo mostrar filtros cuando la sección "Descubrir películas" está en vista. */
+  filtersVisible?: boolean;
+  /** En landing no se muestra el filtro País; solo en discover. */
+  showRegionFilter?: boolean;
 };
 
-export function DiscoverFilters({ genres, initialRegion, initialGenres, initialProviders = [], sidebarOpen = true, onSidebarToggle }: Props) {
+export function DiscoverFilters({ genres, initialRegion, initialGenres, initialProviders = [], sidebarOpen = true, onSidebarToggle, basePath = "/discover", showSearch = true, filtersVisible = true, showRegionFilter = true }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [genreDropdownOpen, setGenreDropdownOpen] = useState(false);
   const [platformDropdownOpen, setPlatformDropdownOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const genreDropdownRefMobile = useRef<HTMLDivElement>(null);
   const genreDropdownRefSidebar = useRef<HTMLDivElement>(null);
   const platformDropdownRefSidebar = useRef<HTMLDivElement>(null);
@@ -44,6 +53,19 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
 
   const currentYear = new Date().getFullYear();
   const YEARS = Array.from({ length: currentYear - 1900 + 1 }, (_, i) => currentYear - i);
+
+  // En la landing, guardar scroll antes de navegar y no hacer scroll al top para poder restaurar después.
+  const pushWithScrollRestore = useCallback(
+    (url: string) => {
+      if (basePath === "/" && typeof window !== "undefined") {
+        sessionStorage.setItem("landingScrollY", String(window.scrollY));
+        router.push(url, { scroll: false });
+      } else {
+        router.push(url);
+      }
+    },
+    [basePath, router]
+  );
 
   const setFilters = useCallback(
     (region: string, genreIds: number[], providerIds: number[], mediaFilter?: string) => {
@@ -59,9 +81,9 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
       params.delete("providers");
       providerIds.forEach((id) => params.append("providers", String(id)));
       params.delete("sort_by");
-      router.push(`/discover?${params.toString()}`);
+      pushWithScrollRestore(`${basePath}?${params.toString()}`);
     },
-    [router, searchParams]
+    [searchParams, basePath, pushWithScrollRestore]
   );
 
   const mediaFilter = searchParams.get("media") || "both";
@@ -71,9 +93,9 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
       const params = new URLSearchParams(searchParams.toString());
       if (value === "both") params.delete("media");
       else params.set("media", value);
-      router.push(`/discover?${params.toString()}`);
+      pushWithScrollRestore(`${basePath}?${params.toString()}`);
     },
-    [router, searchParams]
+    [searchParams, basePath, pushWithScrollRestore]
   );
 
   const yearFrom = searchParams.get("year_from") ?? "";
@@ -84,9 +106,9 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
       const params = new URLSearchParams(searchParams.toString());
       if (value === "") params.delete("year_from");
       else params.set("year_from", value);
-      router.push(`/discover?${params.toString()}`);
+      pushWithScrollRestore(`${basePath}?${params.toString()}`);
     },
-    [router, searchParams]
+    [searchParams, basePath, pushWithScrollRestore]
   );
   const handleYearToChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -94,9 +116,9 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
       const params = new URLSearchParams(searchParams.toString());
       if (value === "") params.delete("year_to");
       else params.set("year_to", value);
-      router.push(`/discover?${params.toString()}`);
+      pushWithScrollRestore(`${basePath}?${params.toString()}`);
     },
-    [router, searchParams]
+    [searchParams, basePath, pushWithScrollRestore]
   );
 
   const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -170,186 +192,233 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
   const selectedGenres = searchParams.getAll("genres").map(Number).filter(Number.isFinite);
   const selectedProviders = searchParams.getAll("providers").map(Number).filter(Number.isFinite);
 
+  // Sin barra de búsqueda: sidebar y botón Filtros empiezan debajo de la navbar (~57px).
+  const filtersTopClass = showSearch ? "top-[7.5rem]" : "top-14";
+
   return (
-    <>
-      {/* Barra de búsqueda: pegada a la navbar sin espacio; al hacer scroll se va con el contenido (solo la navbar queda fija). */}
-      <div className="border-b border-white/[0.06] bg-black/70 backdrop-blur-xl px-4 py-3">
-        <div className="max-w-[1400px] mx-auto">
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full">
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Buscar películas o series..."
-              className="w-full min-w-0 rounded-lg border border-white/20 bg-white/5 text-white pl-3 pr-9 py-2.5 text-sm placeholder:text-white/50 outline-none focus:ring-2 focus:ring-white/30"
-            />
+    <div className={!filtersVisible ? "pointer-events-none invisible opacity-0" : ""}>
+      {/* Una sola fila: búsqueda + Filtros en móvil a la misma altura; en desktop búsqueda y luego sidebar. */}
+      <div className="border-b border-white/[0.06] bg-black/70 backdrop-blur-xl px-3 py-2 sm:px-4 mb-6 lg:mb-0">
+        <div className="max-w-[1400px] mx-auto flex items-center gap-2">
+          {showSearch ? (
+            <form onSubmit={handleSearchSubmit} className="relative flex flex-1 min-w-0 items-center lg:max-w-md">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar películas o series..."
+                className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 text-white pl-2.5 pr-8 py-2 text-sm placeholder:text-white/50 outline-none focus:ring-2 focus:ring-white/30"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-white/70 hover:text-white rounded"
+                aria-label="Buscar"
+              >
+                <Search size={16} />
+              </button>
+            </form>
+          ) : null}
+          {/* Móvil: botón Filtros a la misma altura que la búsqueda (o solo Filtros si no hay búsqueda). */}
+          <div className="flex shrink-0 lg:hidden">
             <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-white/70 hover:text-white rounded"
-              aria-label="Buscar"
+              type="button"
+              onClick={() => setMobileFiltersOpen(true)}
+              className="inline-flex h-[38px] items-center gap-2 rounded-lg border border-white/20 bg-white/5 text-white px-3 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-white/30"
+              aria-label="Abrir filtros"
             >
-              <Search size={18} />
+              <SlidersHorizontal size={18} />
+              Filtros
+            {(selectedGenres.length > 0 || selectedProviders.length > 0 || mediaFilter !== "both" || yearFrom || yearTo || (showRegionFilter && region)) && (
+              <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-white/25 px-1.5 text-xs">
+                {selectedGenres.length + selectedProviders.length + (mediaFilter !== "both" ? 1 : 0) + (yearFrom ? 1 : 0) + (yearTo ? 1 : 0) + (showRegionFilter && region ? 1 : 0)}
+              </span>
+            )}
             </button>
-          </form>
+          </div>
         </div>
       </div>
-      {/* En móvil: filtros en una fila debajo de la barra, mismo glass que la barra de búsqueda. */}
-      <div className="lg:hidden border-b border-white/[0.06] bg-black/70 backdrop-blur-xl px-4 py-3 flex flex-wrap items-center gap-2">
-        <select
-          id="discover-media-mobile"
-          value={mediaFilter === "both" ? "both" : mediaFilter}
-          onChange={handleMediaChange}
-          className="rounded-lg border border-white/20 bg-white/5 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/30"
-          aria-label="Tipo"
-        >
-          <option value="both" className="bg-zinc-900 text-white">Películas y series</option>
-          <option value="movie" className="bg-zinc-900 text-white">Películas</option>
-          <option value="tv" className="bg-zinc-900 text-white">Series</option>
-        </select>
-        <select
-          id="discover-year-from-mobile"
-          value={yearFrom}
-          onChange={handleYearFromChange}
-          className="rounded-lg border border-white/20 bg-white/5 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/30"
-          aria-label="Desde año"
-        >
-          <option value="" className="bg-zinc-900 text-white">Desde año</option>
-          {YEARS.map((y) => (
-            <option key={y} value={y} className="bg-zinc-900 text-white">{y}</option>
-          ))}
-        </select>
-        <select
-          id="discover-year-to-mobile"
-          value={yearTo}
-          onChange={handleYearToChange}
-          className="rounded-lg border border-white/20 bg-white/5 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/30"
-          aria-label="Hasta año"
-        >
-          <option value="" className="bg-zinc-900 text-white">Hasta año</option>
-          {YEARS.map((y) => (
-            <option key={y} value={y} className="bg-zinc-900 text-white">{y}</option>
-          ))}
-        </select>
-        <select
-          id="discover-region-mobile"
-          value={region}
-          onChange={handleRegionChange}
-          className="rounded-lg border border-white/20 bg-white/5 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/30"
-        >
-          {REGIONES.map((r) => (
-            <option key={r.value} value={r.value} className="bg-zinc-900 text-white">
-              {r.label}
-            </option>
-          ))}
-        </select>
-        <div className="relative" ref={genreDropdownRefMobile}>
-          <button
-            type="button"
-            onClick={() => setGenreDropdownOpen((o) => !o)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/5 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/30 min-w-[120px]"
-            aria-expanded={genreDropdownOpen}
+      {/* Móvil: panel de filtros (drawer desde abajo). */}
+      {mobileFiltersOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-[998] bg-black/60 backdrop-blur-sm lg:hidden"
+            aria-hidden
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+          <div
+            className="fixed inset-x-0 bottom-0 top-auto z-[999] max-h-[85vh] overflow-y-auto rounded-t-2xl border-t border-white/10 bg-zinc-900 shadow-2xl lg:hidden"
+            role="dialog"
+            aria-label="Filtros"
           >
-            Géneros
-            <ChevronDown size={16} className={genreDropdownOpen ? "rotate-180" : ""} />
-          </button>
-          {genreDropdownOpen && (
-            <div
-              className="absolute left-0 top-full mt-1 rounded-lg border border-white/20 bg-zinc-900 shadow-xl max-h-48 overflow-y-auto min-w-[160px] z-10"
-              role="listbox"
-            >
-              {genres.map((g) => {
-                const checked = selectedGenres.includes(g.id);
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    role="option"
-                    aria-selected={checked}
-                    onClick={() => toggleGenre(g.id)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-                  >
-                    <span className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? "bg-white/30 border-white/50" : "border-white/30"}`}>
-                      {checked ? "✓" : ""}
-                    </span>
-                    {g.name}
-                  </button>
-                );
-              })}
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-zinc-900 px-4 py-3">
+              <span className="text-white font-semibold">Filtros</span>
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen(false)}
+                className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10"
+                aria-label="Cerrar"
+              >
+                <X size={22} />
+              </button>
             </div>
-          )}
-        </div>
-        {selectedGenres.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {selectedGenres.map((id) => {
-              const name = genres.find((g) => g.id === id)?.name ?? String(id);
-              return (
-                <span key={id} className="inline-flex items-center gap-1 rounded-full bg-white/20 text-white px-2 py-0.5 text-xs">
-                  {name}
-                  <button type="button" onClick={() => removeGenre(id)} className="hover:text-red-300" aria-label={`Quitar ${name}`}>×</button>
-                </span>
-              );
-            })}
-          </div>
-        )}
-        <div className="relative" ref={platformDropdownRefMobile}>
-          <button
-            type="button"
-            onClick={() => setPlatformDropdownOpen((o) => !o)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/5 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/30 min-w-[120px]"
-            aria-expanded={platformDropdownOpen}
-          >
-            {selectedProviders.length === 0
-              ? "Plataformas"
-              : selectedProviders.length === 1
-                ? PLATFORMAS.find((p) => p.id === selectedProviders[0])?.name ?? "1"
-                : `${selectedProviders.length} plataformas`}
-            <ChevronDown size={16} className={platformDropdownOpen ? "rotate-180" : ""} />
-          </button>
-          {platformDropdownOpen && (
-            <div
-              className="absolute left-0 top-full mt-1 rounded-lg border border-white/20 bg-zinc-900 shadow-xl max-h-48 overflow-y-auto min-w-[160px] z-10"
-              role="listbox"
-            >
-              {PLATFORMAS.map((p) => {
-                const checked = selectedProviders.includes(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    role="option"
-                    aria-selected={checked}
-                    onClick={() => toggleProvider(p.id)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+            <div className="space-y-4 p-4 pb-8">
+              <div>
+                <label htmlFor="discover-media-drawer" className="mb-1.5 block text-sm font-medium text-white/90">Tipo</label>
+                <select
+                  id="discover-media-drawer"
+                  value={mediaFilter === "both" ? "both" : mediaFilter}
+                  onChange={handleMediaChange}
+                  className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-white/30"
+                >
+                  <option value="both" className="bg-zinc-900">Películas y series</option>
+                  <option value="movie" className="bg-zinc-900">Películas</option>
+                  <option value="tv" className="bg-zinc-900">Series</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="discover-year-from-drawer" className="mb-1.5 block text-sm font-medium text-white/90">Desde año</label>
+                  <select
+                    id="discover-year-from-drawer"
+                    value={yearFrom}
+                    onChange={handleYearFromChange}
+                    className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-white/30"
                   >
-                    <span className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? "bg-white/30 border-white/50" : "border-white/30"}`}>
-                      {checked ? "✓" : ""}
-                    </span>
-                    {p.name}
-                  </button>
-                );
-              })}
+                    <option value="" className="bg-zinc-900">Cualquiera</option>
+                    {YEARS.map((y) => (
+                      <option key={y} value={y} className="bg-zinc-900">{y}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="discover-year-to-drawer" className="mb-1.5 block text-sm font-medium text-white/90">Hasta año</label>
+                  <select
+                    id="discover-year-to-drawer"
+                    value={yearTo}
+                    onChange={handleYearToChange}
+                    className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-white/30"
+                  >
+                    <option value="" className="bg-zinc-900">Cualquiera</option>
+                    {YEARS.map((y) => (
+                      <option key={y} value={y} className="bg-zinc-900">{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {showRegionFilter && (
+                <div>
+                  <label htmlFor="discover-region-drawer" className="mb-1.5 block text-sm font-medium text-white/90">País</label>
+                  <select
+                    id="discover-region-drawer"
+                    value={region}
+                    onChange={handleRegionChange}
+                    className="w-full rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-white/30"
+                  >
+                    {REGIONES.map((r) => (
+                      <option key={r.value} value={r.value} className="bg-zinc-900">{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="relative" ref={genreDropdownRefMobile}>
+                <label className="mb-1.5 block text-sm font-medium text-white/90">Géneros</label>
+                <button
+                  type="button"
+                  onClick={() => setGenreDropdownOpen((o) => !o)}
+                  className="flex w-full items-center justify-between rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-white/30"
+                  aria-expanded={genreDropdownOpen}
+                >
+                  <span>{selectedGenres.length === 0 ? "Elegir géneros" : selectedGenres.length === 1 ? genres.find((g) => g.id === selectedGenres[0])?.name : `${selectedGenres.length} géneros`}</span>
+                  <ChevronDown size={18} className={genreDropdownOpen ? "rotate-180" : ""} />
+                </button>
+                {genreDropdownOpen && (
+                  <div className="mt-1 max-h-48 overflow-y-auto rounded-lg border border-white/20 bg-zinc-800 shadow-xl" role="listbox">
+                    {genres.map((g) => {
+                      const checked = selectedGenres.includes(g.id);
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          role="option"
+                          aria-selected={checked}
+                          onClick={() => toggleGenre(g.id)}
+                          className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                        >
+                          <span className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? "bg-white/30 border-white/50" : "border-white/30"}`}>{checked ? "✓" : ""}</span>
+                          {g.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedGenres.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {selectedGenres.map((id) => {
+                      const name = genres.find((g) => g.id === id)?.name ?? String(id);
+                      return (
+                        <span key={id} className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">
+                          {name}
+                          <button type="button" onClick={() => removeGenre(id)} className="hover:text-red-300" aria-label={`Quitar ${name}`}>×</button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div className="relative" ref={platformDropdownRefMobile}>
+                <label className="mb-1.5 block text-sm font-medium text-white/90">Plataformas</label>
+                <button
+                  type="button"
+                  onClick={() => setPlatformDropdownOpen((o) => !o)}
+                  className="flex w-full items-center justify-between rounded-lg border border-white/20 bg-white/5 px-3 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-white/30"
+                  aria-expanded={platformDropdownOpen}
+                >
+                  <span>{selectedProviders.length === 0 ? "Elegir plataformas" : selectedProviders.length === 1 ? PLATFORMAS.find((p) => p.id === selectedProviders[0])?.name : `${selectedProviders.length} plataformas`}</span>
+                  <ChevronDown size={18} className={platformDropdownOpen ? "rotate-180" : ""} />
+                </button>
+                {platformDropdownOpen && (
+                  <div className="mt-1 max-h-48 overflow-y-auto rounded-lg border border-white/20 bg-zinc-800 shadow-xl" role="listbox">
+                    {PLATFORMAS.map((p) => {
+                      const checked = selectedProviders.includes(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          role="option"
+                          aria-selected={checked}
+                          onClick={() => toggleProvider(p.id)}
+                          className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-white/10"
+                        >
+                          <span className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${checked ? "bg-white/30 border-white/50" : "border-white/30"}`}>{checked ? "✓" : ""}</span>
+                          {p.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedProviders.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {selectedProviders.map((id) => {
+                      const name = PLATFORMAS.find((p) => p.id === id)?.name ?? String(id);
+                      return (
+                        <span key={id} className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-xs text-white">
+                          {name}
+                          <button type="button" onClick={() => removeProvider(id)} className="hover:text-red-300" aria-label={`Quitar ${name}`}>×</button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-        {selectedProviders.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {selectedProviders.map((id) => {
-              const name = PLATFORMAS.find((p) => p.id === id)?.name ?? String(id);
-              return (
-                <span key={id} className="inline-flex items-center gap-1 rounded-full bg-white/20 text-white px-2 py-0.5 text-xs">
-                  {name}
-                  <button type="button" onClick={() => removeProvider(id)} className="hover:text-red-300" aria-label={`Quitar ${name}`}>×</button>
-                </span>
-              );
-            })}
           </div>
-        )}
-      </div>
-      {/* Botón para abrir el menú de filtros cuando está cerrado: debajo de la barra de búsqueda, sin superponerla. */}
+        </>
+      )}
+      {/* Botón para abrir el menú de filtros cuando está cerrado. */}
       <button
         type="button"
         onClick={onSidebarToggle}
-        className={`hidden lg:flex fixed right-4 top-[7.5rem] z-[997] items-center gap-2 px-4 py-2.5 rounded-xl border border-white/20 bg-black/70 backdrop-blur-xl text-white text-sm font-medium hover:bg-white/10 transition-opacity ${
+        className={`hidden lg:flex fixed right-4 ${filtersTopClass} z-[997] items-center gap-2 px-4 py-2.5 rounded-xl border border-white/20 bg-black/70 backdrop-blur-xl text-white text-sm font-medium hover:bg-white/10 transition-opacity ${
           sidebarOpen ? "opacity-0 pointer-events-none" : ""
         }`}
         aria-label="Abrir filtros"
@@ -358,10 +427,10 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
         <SlidersHorizontal size={18} />
         Filtros
       </button>
-      {/* Menú lateral desplegable: empieza debajo de la barra de búsqueda para no superponerla. */}
+      {/* Menú lateral desplegable. */}
       <aside
         className={`hidden lg:block fixed right-0 w-56 bottom-0 border-l border-white/[0.06] bg-black/60 backdrop-blur-xl z-[998] overflow-y-auto transition-transform duration-300 ease-out shadow-[-8px_0_32px_rgba(0,0,0,0.5)] ${
-          sidebarOpen ? "top-[7.5rem] translate-x-0" : "top-[7.5rem] translate-x-full"
+          sidebarOpen ? `${filtersTopClass} translate-x-0` : `${filtersTopClass} translate-x-full`
         }`}
         aria-label="Filtros"
         aria-hidden={!sidebarOpen}
@@ -425,23 +494,25 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
               ))}
             </select>
           </div>
-          <div>
-            <label htmlFor="discover-region" className="block text-white/90 text-sm font-medium mb-2">
-              País
-            </label>
-            <select
-              id="discover-region"
-              value={region}
-              onChange={handleRegionChange}
-              className="w-full rounded-lg border border-white/20 bg-white/5 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/30"
-            >
-              {REGIONES.map((r) => (
-                <option key={r.value} value={r.value} className="bg-zinc-900 text-white">
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {showRegionFilter && (
+            <div>
+              <label htmlFor="discover-region" className="block text-white/90 text-sm font-medium mb-2">
+                País
+              </label>
+              <select
+                id="discover-region"
+                value={region}
+                onChange={handleRegionChange}
+                className="w-full rounded-lg border border-white/20 bg-white/5 text-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-white/30"
+              >
+                {REGIONES.map((r) => (
+                  <option key={r.value} value={r.value} className="bg-zinc-900 text-white">
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="relative" ref={genreDropdownRefSidebar}>
             <label className="block text-white/90 text-sm font-medium mb-2">Géneros</label>
             <button
@@ -513,7 +584,6 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
           <div className="relative pt-2 border-t border-white/10" ref={platformDropdownRefSidebar}>
             <label className="block text-white/90 text-sm font-medium mb-2">
               Plataformas
-              <span className="block text-white/50 text-xs font-normal">En al menos una</span>
             </label>
             <button
               type="button"
@@ -589,6 +659,6 @@ export function DiscoverFilters({ genres, initialRegion, initialGenres, initialP
           )}
         </div>
       </aside>
-    </>
+    </div>
   );
 }

@@ -194,6 +194,10 @@ export function Navbar() {
     pathname.startsWith("/profile") ||
     pathname.startsWith("/title");
 
+  // Descubrir | Recomendaciones solo en discover y recommendations; en perfil/search/title solo logo + perfil.
+  const showDiscoverTabs =
+    pathname.startsWith("/discover") || pathname.startsWith("/recommendations");
+
   const navDark = isLanding || isAuthPage || isAppPage;
   // Barra fija arriba; en modo oscuro: efecto glass (blur + fondo sutil) como el hero.
   const navBg = navDark
@@ -217,65 +221,123 @@ export function Navbar() {
         </div>
       )}
       <nav className={`fixed top-0 left-0 right-0 z-[1000] ${navBg}`}>
-      <div className="max-w-[1400px] mx-auto px-5 py-2.5 flex items-center justify-between gap-4 relative">
-        <div className="flex items-center gap-4 flex-shrink-0">
-          <Link
-            href={
-              pathname.startsWith("/discover") ||
-              pathname.startsWith("/recommendations") ||
-              pathname.startsWith("/search") ||
-              pathname.startsWith("/profile") ||
-              pathname.startsWith("/title")
-                ? "/discover"
-                : isAuthed
-                  ? "/discover"
-                  : "/"
-            }
-            className={`inline-flex items-center gap-2 font-bold text-lg tracking-tight ${brandColor} transition-opacity`}
-          >
-            <Popcorn size={22} aria-hidden="true" />
-            <span>CineMatch</span>
-          </Link>
-          {options.left && !isAppPage ? (
-            <Link href={options.left.href} className={`${navBtnBase} ${navBtnStyle}`}>
-              <ArrowLeft size={18} aria-hidden="true" />
-              <span>{options.left.label}</span>
-            </Link>
-          ) : null}
-        </div>
-
-        {isAppPage ? (
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-8">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-5 py-2 sm:py-2.5 relative">
+        {/* Discover/Recommendations: dos filas en móvil (logo+perfil, luego Descubrir|Recomendaciones); desktop tabs al centro. */}
+        {isAppPage && showDiscoverTabs ? (
+          <div className="flex flex-col gap-0 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+            <div className="flex items-center justify-between min-h-[44px] lg:min-h-0 lg:flex-1 lg:min-w-0">
+              <Link
+                href="/discover"
+                className={`inline-flex items-center gap-2 font-bold text-lg tracking-tight ${brandColor} transition-opacity py-2 -my-2`}
+              >
+                <Popcorn size={22} aria-hidden="true" />
+                <span>CineMatch</span>
+              </Link>
+              {options.actions ? (
+                <div className="flex items-center flex-shrink-0">{options.actions}</div>
+              ) : null}
+            </div>
+            <div className="flex items-center justify-center gap-6 py-2.5 border-t border-white/10 lg:hidden">
+              <Link
+                href="/discover"
+                className={`px-4 py-2.5 -mx-2 rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                  pathname.startsWith("/discover")
+                    ? "text-white nav-tab-active-glow"
+                    : navDark
+                      ? "text-white/60 hover:text-white/90"
+                      : "text-black/60 hover:text-black/90"
+                }`}
+              >
+                Descubrir
+              </Link>
+              <Link
+                href="/recommendations"
+                className={`px-4 py-2.5 -mx-2 rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                  pathname.startsWith("/recommendations")
+                    ? "text-white nav-tab-active-glow"
+                    : navDark
+                      ? "text-white/60 hover:text-white/90"
+                      : "text-black/60 hover:text-black/90"
+                }`}
+              >
+                Recomendaciones
+              </Link>
+            </div>
+            <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-8 pointer-events-none">
+              <div className="pointer-events-auto flex items-center gap-8">
+                <Link
+                  href="/discover"
+                  className={`text-sm font-medium transition-all ${
+                    pathname.startsWith("/discover")
+                      ? "text-white nav-tab-active-glow"
+                      : navDark
+                        ? "text-white/60 hover:text-white/90"
+                        : "text-black/60 hover:text-black/90"
+                  }`}
+                >
+                  Descubrir
+                </Link>
+                <Link
+                  href="/recommendations"
+                  className={`text-sm font-medium transition-all ${
+                    pathname.startsWith("/recommendations")
+                      ? "text-white nav-tab-active-glow"
+                      : navDark
+                        ? "text-white/60 hover:text-white/90"
+                        : "text-black/60 hover:text-black/90"
+                  }`}
+                >
+                  Recomendaciones
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : isAppPage ? (
+          /* Perfil, search, title: solo logo + perfil (una fila). */
+          <div className="flex items-center justify-between gap-4">
             <Link
               href="/discover"
-              className={`text-sm font-medium transition-all ${
-                pathname.startsWith("/discover")
-                  ? "text-white nav-tab-active-glow"
-                  : navDark
-                    ? "text-white/60 hover:text-white/90"
-                    : "text-black/60 hover:text-black/90"
-              }`}
+              className={`inline-flex items-center gap-2 font-bold text-lg tracking-tight ${brandColor} transition-opacity`}
             >
-              Descubrir
+              <Popcorn size={22} aria-hidden="true" />
+              <span>CineMatch</span>
             </Link>
-            <Link
-              href="/recommendations"
-              className={`text-sm font-medium transition-all ${
-                pathname.startsWith("/recommendations")
-                  ? "text-white nav-tab-active-glow"
-                  : navDark
-                    ? "text-white/60 hover:text-white/90"
-                    : "text-black/60 hover:text-black/90"
-              }`}
-            >
-              Recomendaciones
-            </Link>
+            {options.actions ? (
+              <div className="flex items-center flex-shrink-0">{options.actions}</div>
+            ) : null}
           </div>
-        ) : null}
-
-        {options.actions ? (
-          <div className="flex items-center gap-2.5 flex-shrink-0">{options.actions}</div>
-        ) : null}
+        ) : (
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-shrink-0">
+              <Link
+                href={
+                  pathname.startsWith("/discover") ||
+                  pathname.startsWith("/recommendations") ||
+                  pathname.startsWith("/search") ||
+                  pathname.startsWith("/profile") ||
+                  pathname.startsWith("/title")
+                    ? "/discover"
+                    : isAuthed
+                      ? "/discover"
+                      : "/"
+                }
+                className={`inline-flex items-center gap-2 font-bold text-lg tracking-tight ${brandColor} transition-opacity`}
+              >
+                <Popcorn size={22} aria-hidden="true" />
+                <span>CineMatch</span>
+              </Link>
+              {options.left && !isAppPage ? (
+                <Link href={options.left.href} className={`${navBtnBase} ${navBtnStyle}`}>
+                  <ArrowLeft size={18} aria-hidden="true" />
+                  <span>{options.left.label}</span>
+                </Link>
+              ) : null}
+            </div>
+            {options.actions ? (
+              <div className="flex items-center gap-2.5 flex-shrink-0">{options.actions}</div>
+            ) : null}
+          </div>
+        )}
       </div>
     </nav>
     </>

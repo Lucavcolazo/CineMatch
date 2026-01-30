@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, Play } from "lucide-react";
 import type { MediaType } from "@/lib/tmdb";
 import { getWatchedStatus, toggleWatched } from "@/lib/actions/user";
 
@@ -20,6 +20,9 @@ type TmdbTitleDetails = {
   first_air_date?: string;
   runtime?: number;
   episode_run_time?: number[];
+  number_of_seasons?: number;
+  number_of_episodes?: number;
+  trailer_key?: string;
   watch_providers?: {
     flatrate: WatchProvider[];
     rent: WatchProvider[];
@@ -95,12 +98,28 @@ export function TitleModal({ mediaType, id, onClose, region = "AR" }: Props) {
 
   const title = data?.title ?? data?.name ?? "Sin título";
   const typeLabel = mediaType === "movie" ? "Película" : "Serie";
-  const duration = data?.runtime
-    ? `${data.runtime} min`
-    : data?.episode_run_time?.length
-      ? `${data.episode_run_time[0]} min/ep`
-      : null;
+  const duration =
+    mediaType === "movie" && data?.runtime
+      ? `${data.runtime} min`
+      : mediaType === "tv"
+        ? [
+            data?.number_of_seasons != null && data.number_of_seasons > 0
+              ? `${data.number_of_seasons} temporada${data.number_of_seasons !== 1 ? "s" : ""}`
+              : null,
+            data?.number_of_episodes != null && data.number_of_episodes > 0
+              ? `${data.number_of_episodes} episodios`
+              : null,
+            data?.episode_run_time?.length
+              ? `~${data.episode_run_time[0]} min/ep`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || null
+        : null;
   const year = data?.release_date?.slice(0, 4) ?? data?.first_air_date?.slice(0, 4) ?? null;
+  const trailerUrl = data?.trailer_key
+    ? `https://www.youtube.com/watch?v=${data.trailer_key}`
+    : null;
 
   return (
     <div
@@ -156,6 +175,17 @@ export function TitleModal({ mediaType, id, onClose, region = "AR" }: Props) {
                 {duration ? ` · ${duration}` : ""}
               </p>
 
+              {trailerUrl && (
+                <a
+                  href={trailerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-red-500/80 bg-red-500/20 text-red-200 hover:bg-red-500/30 transition-colors text-sm font-medium mb-4"
+                >
+                  <Play size={18} />
+                  Ver tráiler
+                </a>
+              )}
               {/* Botón "La vi": relleno cuando está marcado, solo borde cuando no. Actualización optimista al hacer clic. */}
               <div className="mb-4">
                 <button
@@ -170,16 +200,16 @@ export function TitleModal({ mediaType, id, onClose, region = "AR" }: Props) {
                   }}
                   className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
                     isWatched
-                      ? "border-emerald-400 bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                      ? "border-white bg-white text-black"
                       : "border-white/30 bg-transparent text-white hover:bg-white/10"
                   }`}
                 >
                   <span
                     className={`flex items-center justify-center w-6 h-6 rounded-full border-2 shrink-0 ${
-                      isWatched ? "border-white bg-white/20" : "border-white/60"
+                      isWatched ? "border-black bg-black/20" : "border-white/60"
                     }`}
                   >
-                    <Check size={14} strokeWidth={3} className={isWatched ? "text-white" : "text-white/50"} />
+                    <Check size={14} strokeWidth={3} className={isWatched ? "text-black" : "text-white/50"} />
                   </span>
                   {isWatched ? "La vi" : "Marcar como vista"}
                 </button>

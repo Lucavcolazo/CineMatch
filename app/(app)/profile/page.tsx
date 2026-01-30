@@ -37,7 +37,7 @@ export default async function ProfilePage() {
   const watchedCount = await getWatchedCount();
 
   return (
-    <div className="min-h-screen bg-black text-white pt-[57px]">
+    <div className="min-h-screen bg-black text-white pt-[110px] lg:pt-[57px]">
       <div className="w-full max-w-[1200px] mx-auto px-6 py-8">
         <h1 className="text-2xl font-bold text-white mb-8">Mi perfil</h1>
 

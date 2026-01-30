@@ -99,7 +99,7 @@ export default async function DiscoverPage(props: {
     const items = [...movies, ...tvs];
     const genres = genreRes.genres ?? [];
     return (
-      <div className="min-h-screen bg-black text-white pt-[57px]">
+      <div className="min-h-screen bg-black text-white pt-[132px] lg:pt-[57px]">
         <DiscoverClient
           items={items}
           genres={genres}
@@ -137,7 +137,7 @@ export default async function DiscoverPage(props: {
   const genres = genreRes.genres ?? [];
 
   return (
-    <div className="min-h-screen bg-black text-white pt-[57px]">
+    <div className="min-h-screen bg-black text-white pt-[132px] lg:pt-[57px]">
       <DiscoverClient
         items={items}
         genres={genres}
