@@ -7,7 +7,8 @@ import {
   type MediaType,
   type TmdbProvider,
 } from "@/lib/tmdb";
-import { toggleFavorite, upsertRating } from "@/lib/actions/user";
+import { upsertRating } from "@/lib/actions/user";
+import { FavoriteButton } from "@/components/title/FavoriteButton";
 
 function pickProvidersForRegion(
   providers: Awaited<ReturnType<typeof getWatchProviders>>,
@@ -92,23 +93,12 @@ export default async function TitlePage(props: {
           <>
             <div className="h-3.5" />
             <div className="flex gap-3 flex-wrap items-center">
-              <form
-                action={async () => {
-                  "use server";
-                  await toggleFavorite({
-                    tmdbId,
-                    mediaType,
-                    nextPath: `/title/${mediaType}/${tmdbId}`,
-                  });
-                }}
-              >
-                <button
-                  type="submit"
-                  className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-600 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors"
-                >
-                  {fav?.id ? "Quitar de favoritos" : "Agregar a favoritos"}
-                </button>
-              </form>
+              <FavoriteButton
+                tmdbId={tmdbId}
+                mediaType={mediaType}
+                currentPath={`/title/${mediaType}/${tmdbId}`}
+                label={fav?.id ? "Quitar de favoritos" : "Agregar a favoritos"}
+              />
 
               <form action={async (formData: FormData) => {
                 "use server";

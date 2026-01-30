@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
 
   if (isPrivate && !user) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/login";
+    redirectUrl.pathname = "/ingresa";
     redirectUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(redirectUrl);
   }
@@ -53,8 +53,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Si está logueado y cae en login/signup, lo mandamos a discover.
-  const isAuthPage = pathname === "/login" || pathname === "/signup";
+  // Si está logueado y cae en ingresa/login/signup, lo mandamos a discover.
+  const isAuthPage = pathname === "/ingresa" || pathname === "/login" || pathname === "/signup";
   if (isAuthPage && user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/discover";

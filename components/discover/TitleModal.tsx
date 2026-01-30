@@ -163,8 +163,6 @@ export function TitleModal({ mediaType, id, onClose, region = "AR" }: Props) {
                   disabled={watchedLoading}
                   onClick={async () => {
                     setWatchedLoading(true);
-                    const next = !isWatched;
-                    setIsWatched(next);
                     await toggleWatched({ tmdbId: id, mediaType });
                     const actual = await getWatchedStatus({ tmdbId: id, mediaType });
                     setIsWatched(actual);

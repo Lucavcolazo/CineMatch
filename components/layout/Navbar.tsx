@@ -7,8 +7,6 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import { useEffect, useRef, useState } from "react";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { cacheGet, cacheSet, cacheRemove, PROFILE_CACHE_KEY, PROFILE_CACHE_TTL_MS } from "@/lib/cache";
-import StarBorder from "@/components/ui/StarBorder";
-
 type Profile = {
   avatar_url: string | null;
   display_name: string | null;
@@ -128,18 +126,19 @@ export function Navbar() {
         left: null,
         right: null,
         actions: (
-          <div className="flex items-center gap-2.5">
-            <StarBorder as={Link} href="/login" color="white" speed="2s">
-              Iniciar sesión
-            </StarBorder>
-            <StarBorder as={Link} href="/signup" color="white" speed="2s">
-              Registrarse
-            </StarBorder>
-          </div>
+          <Link
+            href="/ingresa"
+            className="inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            Ingresa
+          </Link>
         ),
       };
     }
 
+    if (pathname.startsWith("/ingresa")) {
+      return { left: null, right: null, actions: null };
+    }
     if (pathname.startsWith("/login")) {
       return { left: null, right: null, actions: null };
     }
@@ -182,6 +181,7 @@ export function Navbar() {
 
   const options = getNavOptions();
   const isAuthPage =
+    pathname.startsWith("/ingresa") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/forgot-password") ||
@@ -195,9 +195,9 @@ export function Navbar() {
     pathname.startsWith("/title");
 
   const navDark = isLanding || isAuthPage || isAppPage;
-  // Barra fija arriba al hacer scroll; en app/landing: glass (blur + semitransparente) para que se integre con el contenido.
+  // Barra fija arriba; en modo oscuro: efecto glass (blur + fondo sutil) como el hero.
   const navBg = navDark
-    ? "bg-black/70 backdrop-blur-xl border-b border-white/[0.06]"
+    ? "bg-black/[0.12] backdrop-blur-[10px] border-b border-white/[0.06]"
     : "bg-white/90 backdrop-blur-xl border-b border-black/5 shadow-sm";
   const brandColor = navDark ? "text-white hover:opacity-80" : "text-black hover:opacity-70";
   const navBtnBase = "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors";
