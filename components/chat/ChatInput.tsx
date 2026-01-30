@@ -29,7 +29,8 @@ export function ChatInput({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 300)}px`;
+    const scrollHeight = el.scrollHeight;
+    el.style.height = `${Math.min(scrollHeight, 300)}px`;
   }, [value]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -47,7 +48,9 @@ export function ChatInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full max-w-2xl mx-auto gap-2 rounded-2xl bg-white/5 border border-white/10 p-2"
+      className={cn(
+        "flex w-full max-w-3xl mx-auto items-end gap-2 rounded-[28px] bg-[#1e1e1e] border-none p-3 transition-colors focus-within:bg-[#2a2a2a]",
+      )}
     >
       <textarea
         ref={textareaRef}
@@ -58,21 +61,22 @@ export function ChatInput({
         disabled={disabled}
         rows={1}
         className={cn(
-          "flex-1 min-h-[44px] max-h-[300px] resize-none rounded-xl border-none bg-transparent px-4 py-3 text-white placeholder:text-white/50",
+          "flex-1 min-h-[24px] max-h-[300px] resize-none border-none bg-transparent px-2 py-2 text-white placeholder:text-zinc-400 text-lg",
           "focus:outline-none focus:ring-0"
         )}
+        style={{ overflow: 'hidden' }} 
       />
       <button
         type="submit"
         disabled={disabled || !value.trim()}
         aria-label="Enviar mensaje"
         className={cn(
-          "flex-shrink-0 rounded-xl p-2.5 transition-colors",
-          "bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed",
-          "text-white"
+          "flex-shrink-0 rounded-full p-2 mb-0.5 transition-colors", // mb-0.5 to align with text
+          "text-white/80 hover:text-white hover:bg-white/10",
+          "disabled:opacity-30 disabled:cursor-not-allowed"
         )}
       >
-        <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
+        <ArrowRight className="h-6 w-6" strokeWidth={2} />
       </button>
     </form>
   );

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import * as LucideIcons from "lucide-react";
-import { ChevronLeft, ChevronRight, MessageCircle, Menu, Plus, Popcorn, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, MessageCircle, Menu, Plus, Popcorn, User, MoreVertical, Edit2, Trash2, Check, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ChatInput } from "./ChatInput";
 import { cn } from "@/lib/utils";
@@ -69,6 +69,12 @@ export function ChatClient() {
   const chatIdRef = useRef(chatId);
   const prevLoadingRef = useRef(loadingMessages);
 
+  // Chat Actions State
+  const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const loadUserProfile = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -106,6 +112,13 @@ export function ChatClient() {
   useEffect(() => {
     setChatId(chatIdFromUrl ?? undefined);
   }, [chatIdFromUrl]);
+
+  // Close context menu on click outside
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenu(null);
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, []);
 
   const fetchChats = useCallback(async () => {
     setLoadingChats(true);
@@ -196,6 +209,83 @@ export function ChatClient() {
     }
   };
 
+  const handleDeleteChat = async (id: string) => {
+    // Instant delete, no confirmation
+    try {
+      // Optimistic delete from UI first
+      setChats((prev) => prev.filter((c) => c.id !== id));
+      if (chatId === id) {
+        setChatId(undefined);
+        router.replace("/chat");
+      }
+
+      const res = await fetch(`/api/chats/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        // If failed, maybe revert? integrating fetchChats() would be safer but user wants speed.
+        console.error("Failed to delete chat in DB");
+        fetchChats(); // Revert/Sync if error
+      }
+    } catch (error) {
+      console.error("Failed to delete chat", error);
+    }
+  };
+
+  const startEditing = (id: string, currentTitle: string | null) => {
+    setEditingChatId(id);
+    setEditingTitle(currentTitle || "Chat nuevo");
+    setContextMenu(null);
+  };
+
+  const saveTitle = async () => {
+    if (!editingChatId) return;
+    const newTitle = editingTitle.trim() || "Chat nuevo";
+    
+    // Optimistic update
+    setChats((prev) => prev.map(c => c.id === editingChatId ? { ...c, title: newTitle } : c));
+    setEditingChatId(null);
+
+    try {
+      await fetch(`/api/chats/${editingChatId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle }),
+      });
+    } catch (error) {
+      console.error("Failed to rename chat", error);
+      fetchChats(); // Revert on error
+    }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    setContextMenu({ id, x: e.clientX, y: e.clientY });
+  };
+
+  const onMenuButtonClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    // Position menu slightly offset from the button
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setContextMenu({ id, x: rect.right + 5, y: rect.top });
+  };
+
+  // Long Press Handlers
+  const handleTouchStart = (id: string, e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const x = touch.clientX;
+    const y = touch.clientY;
+    longPressTimerRef.current = setTimeout(() => {
+      setContextMenu({ id, x, y });
+    }, 600); // 600ms long press
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
   const [inputValue, setInputValue] = useState("");
   const isLoading = status === "submitted" || status === "streaming";
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -251,19 +341,46 @@ export function ChatClient() {
         ) : (
           <ul className="space-y-0.5">
             {chats.map((c) => (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  onClick={() => selectChat(c.id)}
-                  className={cn(
-                    "w-full text-left rounded-lg px-3 py-2 text-sm truncate transition-colors",
-                    chatId === c.id
-                      ? "bg-white/15 text-white"
-                      : "text-white/80 hover:bg-white/10"
+              <li key={c.id} className="relative group">
+                 {editingChatId === c.id ? (
+                    <div className="flex items-center gap-1 px-2 py-1 bg-white/5 rounded-lg">
+                      <input
+                        autoFocus
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveTitle();
+                          if (e.key === "Escape") setEditingChatId(null);
+                        }}
+                        className="flex-1 bg-transparent text-white text-sm outline-none w-full min-w-0"
+                      />
+                      <button onClick={saveTitle} className="p-1 hover:text-green-400 text-white/50"><Check className="h-3 w-3" /></button>
+                      <button onClick={() => setEditingChatId(null)} className="p-1 hover:text-red-400 text-white/50"><X className="h-3 w-3" /></button>
+                    </div>
+                  ) : (
+                  <button
+                    type="button"
+                    onClick={() => selectChat(c.id)}
+                    onTouchStart={(e) => handleTouchStart(c.id, e)}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchMove={handleTouchEnd} /* Cancel if moved */
+                    className={cn(
+                      "w-full text-left rounded-lg px-3 py-2 text-sm truncate transition-colors relative pr-9", // Added padding right for button
+                      chatId === c.id
+                        ? "bg-white/15 text-white"
+                        : "text-white/80 hover:bg-white/10"
+                    )}
+                  >
+                    {c.title || "Chat nuevo"}
+                    {/* Three Dots Button (Left Click Menu) */}
+                    <div 
+                        className="absolute right-0 top-0 bottom-0 w-9 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => onMenuButtonClick(e, c.id)}
+                    >
+                        <MoreVertical className="h-3.5 w-3.5 text-white/50 hover:text-white" />
+                    </div>
+                  </button>
                   )}
-                >
-                  {c.title || "Chat nuevo"}
-                </button>
               </li>
             ))}
           </ul>
@@ -279,6 +396,28 @@ export function ChatClient() {
           Nuevo chat
         </button>
       </div>
+      
+      {/* Context Menu Overlay */}
+      {contextMenu && (
+        <div 
+          className="fixed z-50 bg-[#1e1e1e] border border-white/10 rounded-lg shadow-xl py-1 min-w-[140px]"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            onClick={() => startEditing(contextMenu.id, chats.find(c => c.id === contextMenu.id)?.title ?? null)}
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <Edit2 className="h-3.5 w-3.5" /> Renombrar
+          </button>
+          <button 
+            onClick={() => { handleDeleteChat(contextMenu.id); setContextMenu(null); }}
+            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-white/10 hover:text-red-300 transition-colors"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Eliminar
+          </button>
+        </div>
+      )}
     </>
   );
 
@@ -326,6 +465,12 @@ export function ChatClient() {
           </div>
           {mobileChatsOpen && (
             <div className="absolute left-0 right-0 top-full z-20 max-h-[70vh] overflow-y-auto border-b border-white/10 bg-black shadow-lg sm:hidden">
+                {/* Mobile version reuses sidebarContent in a simplified way? 
+                    Actually, copying standard list is safer to separate mobile specifics if needed, 
+                    but sidebarContent uses standard hooks. Let's just use a modified version for mobile or same?
+                    The current sidebarContent has mouse events. Touch events work on mobile.
+                    Let's assume the user wants the SAME interactions (long press) in mobile menu.
+                */}
               <div className="p-2 flex flex-col">
                 <p className="px-2 py-1.5 text-xs font-medium text-white/50 uppercase tracking-wider">
                   Chats recientes
@@ -337,19 +482,35 @@ export function ChatClient() {
                 ) : (
                   <ul className="space-y-0.5 flex-1 min-h-0 overflow-y-auto">
                     {chats.map((c) => (
-                      <li key={c.id}>
-                        <button
-                          type="button"
-                          onClick={() => selectChat(c.id)}
-                          className={cn(
-                            "w-full text-left rounded-lg px-3 py-2 text-sm truncate transition-colors",
-                            chatId === c.id
-                              ? "bg-white/15 text-white"
-                              : "text-white/80 hover:bg-white/10"
-                          )}
-                        >
-                          {c.title || "Chat nuevo"}
-                        </button>
+                      <li key={c.id} className="relative group">
+                          {editingChatId === c.id ? (
+                            <div className="flex items-center gap-1 px-2 py-1 bg-white/5 rounded-lg">
+                                <input
+                                    autoFocus
+                                    value={editingTitle}
+                                    onChange={(e) => setEditingTitle(e.target.value)}
+                                    className="flex-1 bg-transparent text-white text-sm outline-none w-full min-w-0"
+                                />
+                                <button onClick={saveTitle} className="p-1 hover:text-green-400 text-white/50"><Check className="h-3 w-3" /></button>
+                                <button onClick={() => setEditingChatId(null)} className="p-1 hover:text-red-400 text-white/50"><X className="h-3 w-3" /></button>
+                            </div>
+                          ) : (
+                          <button
+                            type="button"
+                            onClick={() => selectChat(c.id)}
+                            onTouchStart={(e) => handleTouchStart(c.id, e)}
+                            onTouchEnd={handleTouchEnd}
+                            onTouchMove={handleTouchEnd}
+                            className={cn(
+                              "w-full text-left rounded-lg px-3 py-2 text-sm truncate transition-colors select-none", 
+                              chatId === c.id
+                                ? "bg-white/15 text-white"
+                                : "text-white/80 hover:bg-white/10"
+                            )}
+                          >
+                            {c.title || "Chat nuevo"}
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
