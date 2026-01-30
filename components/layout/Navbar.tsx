@@ -166,6 +166,9 @@ export function Navbar() {
     if (pathname.startsWith("/recommendations")) {
       return { left: null, right: null, actions: appActions };
     }
+    if (pathname.startsWith("/chat")) {
+      return { left: null, right: null, actions: appActions };
+    }
     if (pathname.startsWith("/search")) {
       return { left: { href: "/discover", label: "Descubrir" }, right: null, actions: appActions };
     }
@@ -192,11 +195,14 @@ export function Navbar() {
     pathname.startsWith("/recommendations") ||
     pathname.startsWith("/search") ||
     pathname.startsWith("/profile") ||
-    pathname.startsWith("/title");
+    pathname.startsWith("/title") ||
+    pathname.startsWith("/chat");
 
-  // Descubrir | Recomendaciones solo en discover y recommendations; en perfil/search/title solo logo + perfil.
+  // Descubrir | Recomendaciones | Chat en discover, recommendations y chat; en perfil/search/title solo logo + perfil.
   const showDiscoverTabs =
-    pathname.startsWith("/discover") || pathname.startsWith("/recommendations");
+    pathname.startsWith("/discover") ||
+    pathname.startsWith("/recommendations") ||
+    pathname.startsWith("/chat");
 
   const navDark = isLanding || isAuthPage || isAppPage;
   // Barra fija arriba; en modo oscuro: efecto glass (blur + fondo sutil) como el hero.
@@ -237,10 +243,10 @@ export function Navbar() {
                 <div className="flex items-center flex-shrink-0">{options.actions}</div>
               ) : null}
             </div>
-            <div className="flex items-center justify-center gap-6 py-2.5 border-t border-white/10 lg:hidden">
+            <div className="flex items-center justify-center gap-4 sm:gap-6 py-2.5 border-t border-white/10 lg:hidden">
               <Link
                 href="/discover"
-                className={`px-4 py-2.5 -mx-2 rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                className={`px-3 sm:px-4 py-2.5 -mx-2 rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   pathname.startsWith("/discover")
                     ? "text-white nav-tab-active-glow"
                     : navDark
@@ -252,7 +258,7 @@ export function Navbar() {
               </Link>
               <Link
                 href="/recommendations"
-                className={`px-4 py-2.5 -mx-2 rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                className={`px-3 sm:px-4 py-2.5 -mx-2 rounded-lg text-sm font-medium transition-all touch-manipulation ${
                   pathname.startsWith("/recommendations")
                     ? "text-white nav-tab-active-glow"
                     : navDark
@@ -261,6 +267,18 @@ export function Navbar() {
                 }`}
               >
                 Recomendaciones
+              </Link>
+              <Link
+                href="/chat"
+                className={`px-3 sm:px-4 py-2.5 -mx-2 rounded-lg text-sm font-medium transition-all touch-manipulation ${
+                  pathname.startsWith("/chat")
+                    ? "text-white nav-tab-active-glow"
+                    : navDark
+                      ? "text-white/60 hover:text-white/90"
+                      : "text-black/60 hover:text-black/90"
+                }`}
+              >
+                Chat
               </Link>
             </div>
             <div className="hidden lg:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 items-center gap-8 pointer-events-none">
@@ -288,6 +306,18 @@ export function Navbar() {
                   }`}
                 >
                   Recomendaciones
+                </Link>
+                <Link
+                  href="/chat"
+                  className={`text-sm font-medium transition-all ${
+                    pathname.startsWith("/chat")
+                      ? "text-white nav-tab-active-glow"
+                      : navDark
+                        ? "text-white/60 hover:text-white/90"
+                        : "text-black/60 hover:text-black/90"
+                  }`}
+                >
+                  Chat
                 </Link>
               </div>
             </div>

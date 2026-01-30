@@ -166,6 +166,15 @@ export function getReleaseDateParams(yearFrom?: number, yearTo?: number): {
   };
 }
 
+/**
+ * Devuelve la página de discover a usar según el día (UTC).
+ * Rota entre páginas 1-5 para que los resultados iniciales cambien cada día.
+ */
+export function getDiscoverPageForToday(): number {
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  return 1 + (dayIndex % 5);
+}
+
 export async function discoverTitles(params: {
   mediaType: MediaType;
   region?: string; // e.g. AR

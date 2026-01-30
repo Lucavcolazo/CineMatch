@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   discoverTitles,
+  getDiscoverPageForToday,
   getGenreMovieList,
   getReleaseDateParams,
   type MediaType,
@@ -63,6 +64,7 @@ export default async function DiscoverPage(props: {
       : defaultProviders;
 
   const regionForApi = regionParam || "AR";
+  const discoverPage = getDiscoverPageForToday();
 
   if (media === "both") {
     const [genreRes, movieRes, tvRes] = await Promise.all([
@@ -72,7 +74,7 @@ export default async function DiscoverPage(props: {
         region: regionForApi,
         genres: genreIds.length ? genreIds : undefined,
         providers: providerIds.length ? providerIds : undefined,
-        page: 1,
+        page: discoverPage,
         sortBy: "release_date.desc",
         primaryReleaseDateGte,
         primaryReleaseDateLte,
@@ -82,7 +84,7 @@ export default async function DiscoverPage(props: {
         region: regionForApi,
         genres: genreIds.length ? genreIds : undefined,
         providers: providerIds.length ? providerIds : undefined,
-        page: 1,
+        page: discoverPage,
         sortBy: "first_air_date.desc",
         firstAirDateGte,
         firstAirDateLte,
@@ -120,7 +122,7 @@ export default async function DiscoverPage(props: {
       region: regionForApi,
       genres: genreIds.length ? genreIds : undefined,
       providers: providerIds.length ? providerIds : undefined,
-      page: 1,
+      page: discoverPage,
       sortBy: mediaType === "tv" ? "first_air_date.desc" : "release_date.desc",
       primaryReleaseDateGte,
       primaryReleaseDateLte,

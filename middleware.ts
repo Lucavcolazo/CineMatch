@@ -37,7 +37,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/recommendations") ||
     pathname.startsWith("/search") ||
     pathname.startsWith("/title") ||
-    pathname.startsWith("/profile");
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/chat");
 
   if (isPrivate && !user) {
     const redirectUrl = request.nextUrl.clone();

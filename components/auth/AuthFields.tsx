@@ -60,8 +60,9 @@ export function PasswordField(
   const labelShow = toggleLabelShow ?? "Mostrar contraseña";
   const labelHide = toggleLabelHide ?? "Ocultar contraseña";
   // Contraseña tapada: asteriscos (*) vía clase .password-asterisk en globals.css
-  const inputStyle: React.CSSProperties =
-    !visible ? { WebkitTextSecurity: "disc", ...style } : (style ?? {});
+  const inputStyle = (
+    !visible ? { WebkitTextSecurity: "disc", ...style } : (style ?? {})
+  ) as React.CSSProperties;
 
   return (
     <div
