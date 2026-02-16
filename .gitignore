@@ -39,6 +39,7 @@ coverage
 
 # Supabase (local)
 .supabase
+.migrations
 
 # Misc
 *.pem
