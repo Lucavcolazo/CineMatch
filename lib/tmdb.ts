@@ -16,6 +16,8 @@ export type TmdbSearchResult = {
   poster_path?: string | null;
   backdrop_path?: string | null;
   vote_average?: number;
+  /** TMDB suele incluirlo en endpoints de búsqueda. */
+  genre_ids?: number[];
   release_date?: string;
   first_air_date?: string;
 };

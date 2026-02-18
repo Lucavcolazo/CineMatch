@@ -1,11 +1,44 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getTitleDetails, getWatchProviders, type MediaType } from "@/lib/tmdb";
+import { getTitleFullInfo, searchTitlesByQuery } from "@/lib/ai/movieTools";
+import { wikipediaSearch, wikipediaSummary } from "@/lib/ai/wikipediaTools";
 import {
   streamText,
   convertToModelMessages,
   type UIMessage,
 } from "ai";
-import { gateway } from "ai";
+import { gateway, stepCountIs, tool } from "ai";
+import { z } from "zod";
+
+type ChatIntent = "recommendations" | "title_info" | "history" | "other";
+
+function detectIntent(text: string): ChatIntent {
+  const t = text.toLowerCase();
+
+  // Historial / vistas
+  if (
+    /\b(vistas?|visto|vi|he visto|que vi|qué vi|mi lista|mi historial)\b/.test(t)
+  ) {
+    return "history";
+  }
+
+  // Recomendaciones / sugerencias
+  if (
+    /\b(recomend|recomenda|recomiéndame|recomendame|suger|que puedo ver|qué puedo ver|que miro|qué miro)\b/.test(
+      t
+    )
+  ) {
+    return "recommendations";
+  }
+
+  // Preguntas sobre un título (aproximación simple)
+  if (/\b(hablame|háblame|opinas|opinás|explica|explicame|debat|compar|final|actor|reparto|sinopsis)\b/.test(t)) {
+    return "title_info";
+  }
+
+  // Fuera de dominio o general
+  return "other";
+}
 
 /**
  * Extrae el texto de un UIMessage (partes tipo "text").
@@ -80,6 +113,8 @@ export async function POST(request: Request) {
   const lastMessage = messages[messages.length - 1];
   const isUserMessage =
     lastMessage?.role === "user" && getMessageText(lastMessage).trim().length > 0;
+  const lastUserText = isUserMessage ? getMessageText(lastMessage).trim() : "";
+  const intent = detectIntent(lastUserText);
 
   if (isUserMessage) {
     const userContent = getMessageText(lastMessage).trim();
@@ -109,10 +144,13 @@ export async function POST(request: Request) {
     .limit(30);
 
   const watchedCount = watchedRows?.length ?? 0;
+  const watchedKeySet = new Set(
+    (watchedRows ?? []).map((r) => `${r.media_type}-${r.tmdb_id}`)
+  );
   let watchedContext: string;
   if (watchedCount === 0) {
     watchedContext =
-      "El usuario aún no marcó títulos como vistos en CineMatch. Recomendá en base a lo que pida en la conversación.";
+      "El usuario aún no marcó títulos como vistos en CineMatch. Usá la conversación y las herramientas de búsqueda para recomendar. Si falta información (géneros, tono, época, plataforma), hacé 1-2 preguntas rápidas antes de recomendar.";
   } else {
     const slice = watchedRows!.slice(0, 25);
     const detailsRes = await Promise.allSettled(
@@ -158,24 +196,167 @@ export async function POST(request: Request) {
 
     const listText =
       titleLines.length > 0
-        ? `Tenés acceso a la lista de títulos que el usuario marcó como vistos en CineMatch, con datos de la API (año, duración, géneros, dónde ver en Argentina cuando esté disponible). Lista: ${titleLines.join("; ")}. Usala siempre que pida recomendaciones o una lista; podés mencionar duración, año, géneros y dónde ver. No digas que no tenés acceso: esta lista te fue proporcionada para que la uses.`
-        : `El usuario tiene ${watchedCount} título(s) marcado(s) como vistos. Tené en cuenta sus gustos al recomendar.`;
+        ? `Tenés acceso a la lista de títulos que el usuario marcó como vistos en CineMatch (esto es su HISTORIAL, no una lista de recomendaciones). Contiene datos de la API (año, duración, géneros y dónde ver en Argentina cuando esté disponible). Lista: ${titleLines.join("; ")}. Usala para inferir gustos y para evitar recomendar títulos ya vistos. Si el usuario pide “recomendaciones”, combiná esta señal con búsquedas externas (tools) para encontrar títulos nuevos que se ajusten a lo que pide.`
+        : `El usuario tiene ${watchedCount} título(s) marcado(s) como vistos. Usalo como señal de gustos y para evitar recomendar títulos ya vistos.`;
     watchedContext = listText;
   }
 
   const systemPrompt = `Sos Chaty, el asistente de recomendaciones de películas y series de CineMatch. Hablás en español de forma natural y cercana.
 
+ESTILO DE RESPUESTA:
+- Escribí en texto plano, sin usar formato Markdown (no uses **negritas**, ni guiones "-", ni listas con "*", ni títulos con "#").
+- Si querés enumerar recomendaciones, usá un formato simple como:
+  1) Título (año, tipo). Motivo corto...
+  2) Otro título (año, tipo). Motivo corto...
+  (sin guiones ni asteriscos).
+
 RESTRICCIÓN IMPORTANTE: Solo podés hablar y responder sobre temas relacionados con CineMatch: películas, series, recomendaciones, géneros, actores/actrices de cine y TV, estrenos, gustos cinematográficos, listas de títulos, etc. Si el usuario escribe sobre otro tema (deportes, política, matemáticas, clima, noticias generales, etc.), respondé una sola vez de forma amable que solo podés ayudar con películas y series, y sugerile que pregunte algo sobre recomendaciones o su lista de vistas. No des información ni mantengas conversación sobre temas ajenos a cine y series.
 
 ${watchedContext}
-Respondé siempre en español. Si el usuario escribe con errores o de forma informal, entendelo igual y respondé con buena onda. Recomendá películas y series cuando pida sugerencias; podés mencionar títulos concretos, duración, año, géneros y dónde ver (streaming en Argentina cuando lo tengas en la lista). Si recomendás un título que no está en la lista del usuario, podés decir que en CineMatch puede ver la ficha con duración, dónde verla y más en Descubrir o en la página del título.`;
+
+CAPACIDADES Y COMPORTAMIENTO (importante):
+- Detectá la intención del usuario: (a) recomendaciones, (b) debate/preguntas sobre un título, (c) “qué vi / mi historial”.
+- Para RECOMENDACIONES: no te bases solo en lo visto. Usá la lista de vistos como señal de gustos y como filtro (evitá recomendar cosas ya vistas). Usá las herramientas de búsqueda para encontrar títulos que coincidan con lo que el usuario pide (género, tono, época, similar a X, etc.). Si la consigna es ambigua, hacé 1-2 preguntas aclaratorias.
+- Para DEBATE o PREGUNTAS sobre una película/serie: usá herramientas para obtener datos (sinopsis, ficha, dónde ver, etc.) y luego respondé con análisis propio. Si hay ambigüedad en el título, pedí aclaración o proponé 2 opciones.
+- Para HISTORIAL: usá solo la lista de vistos proporcionada.
+
+REGLA PARA RECOMENDACIONES (obligatoria): antes de recomendar, usá la herramienta searchTitlesByQuery para traer opciones externas y elegí títulos NO vistos (isWatched=false). Si necesitás enriquecer con datos (duración, providers, etc.), usá getTitleFullInfo.
+
+FORMATO SUGERIDO:
+- Si recomendás, devolvé 3-6 opciones con: título + año + tipo (película o serie, escrito en minúsculas) + 1-2 razones concretas. Si sabés dónde ver, agregalo en la misma línea al final ("Dónde ver: ...").
+
+Respondé siempre en español. Si el usuario escribe con errores o de forma informal, entendelo igual y respondé con buena onda.`;
+
+  // Contexto externo precomputado para ayudar al modelo a no inventar.
+  // Nota: esto no reemplaza tools; es una “guía” inicial con resultados reales.
+  let externalCandidatesContext = "";
+  if (intent === "recommendations" || intent === "title_info") {
+    try {
+      const candidates = await searchTitlesByQuery({
+        query: lastUserText,
+        limit: 12,
+      });
+      const filtered =
+        intent === "recommendations"
+          ? candidates.filter(
+              (c) => !watchedKeySet.has(`${c.mediaType}-${c.tmdbId}`)
+            )
+          : candidates;
+
+      if (filtered.length) {
+        const lines = filtered.slice(0, 12).map((c) => {
+          const year = c.year ? `, ${c.year}` : "";
+          const type = c.mediaType === "movie" ? "película" : "serie";
+          return `- ${c.title} (${type}${year}) [tmdb:${c.mediaType}:${c.tmdbId}]`;
+        });
+        externalCandidatesContext = `\n\nCANDIDATOS_EXTERNOS_REAL (TMDB, no inventar títulos fuera de esta lista):\n${lines.join(
+          "\n"
+        )}\n`;
+      } else {
+        externalCandidatesContext =
+          "\n\nCANDIDATOS_EXTERNOS_REAL: (vacío). Si necesitás títulos para recomendar o debatir, pedí una aclaración corta (por ejemplo, título exacto o género/época) y luego usá tools.\n";
+      }
+    } catch {
+      externalCandidatesContext =
+        "\n\nCANDIDATOS_EXTERNOS_REAL: (no disponibles por un error). Usá tools igualmente y, si falla, pedí una aclaración corta.\n";
+    }
+  }
 
   // Modelo barato para pruebas; override con AI_GATEWAY_CHAT_MODEL (ej. anthropic/claude-sonnet-4).
   const modelId = process.env.AI_GATEWAY_CHAT_MODEL ?? "openai/gpt-4o-mini";
   const result = streamText({
     model: gateway(modelId),
-    system: systemPrompt,
+    system: systemPrompt + externalCandidatesContext,
     messages: await convertToModelMessages(messages),
+    stopWhen: stepCountIs(6),
+    prepareStep: async ({ stepNumber }) => {
+      if (stepNumber !== 0) return;
+
+      if (intent === "recommendations") {
+        return {
+          toolChoice: { type: "tool", toolName: "searchTitlesByQuery" },
+          activeTools: ["searchTitlesByQuery", "getTitleFullInfo"],
+        };
+      }
+
+      if (intent === "title_info") {
+        return {
+          toolChoice: "required",
+          activeTools: [
+            "searchTitlesByQuery",
+            "getTitleFullInfo",
+            "wikipediaSearch",
+            "wikipediaSummary",
+          ],
+        };
+      }
+    },
+    tools: {
+      searchTitlesByQuery: tool({
+        description:
+          "Busca películas y series en TMDB según una consulta en español (por ejemplo: 'thriller psicológico 2010s', 'comedias románticas', 'similar a Interstellar'). Devuelve candidatos con tipo, año y resumen corto.",
+        inputSchema: z.object({
+          query: z.string().min(1),
+          limit: z.number().int().min(1).max(10).optional(),
+        }),
+        execute: async ({ query, limit }: { query: string; limit?: number }) => {
+          const results = await searchTitlesByQuery({ query, limit });
+          return results.map((r) => ({
+            ...r,
+            isWatched: watchedKeySet.has(`${r.mediaType}-${r.tmdbId}`),
+          }));
+        },
+      }),
+      getTitleFullInfo: tool({
+        description:
+          "Devuelve ficha completa (datos + providers) de un título de TMDB dado su mediaType ('movie'|'tv') y tmdbId. Útil para debatir o enriquecer recomendaciones con datos concretos.",
+        inputSchema: z.object({
+          mediaType: z.enum(["movie", "tv"]),
+          tmdbId: z.number().int().positive(),
+          region: z.string().min(2).max(2).optional(),
+        }),
+        execute: async ({
+          mediaType,
+          tmdbId,
+          region,
+        }: {
+          mediaType: "movie" | "tv";
+          tmdbId: number;
+          region?: string;
+        }) => {
+          const info = await getTitleFullInfo({
+            mediaType: mediaType as MediaType,
+            tmdbId,
+            region: region ?? "AR",
+          });
+          return {
+            ...info,
+            isWatched: watchedKeySet.has(`${mediaType}-${tmdbId}`),
+          };
+        },
+      }),
+      wikipediaSearch: tool({
+        description:
+          "Busca páginas en Wikipedia (español) para obtener contexto general sobre una película/serie o temas relacionados (premios, producción, recepción).",
+        inputSchema: z.object({
+          query: z.string().min(1),
+          limit: z.number().int().min(1).max(10).optional(),
+        }),
+        execute: async ({ query, limit }: { query: string; limit?: number }) => {
+          return wikipediaSearch({ query, limit });
+        },
+      }),
+      wikipediaSummary: tool({
+        description:
+          "Obtiene el resumen de una página de Wikipedia (español) por título. Útil cuando se necesita contexto adicional que no está en TMDB.",
+        inputSchema: z.object({
+          title: z.string().min(1),
+        }),
+        execute: async ({ title }: { title: string }) => {
+          return wikipediaSummary({ title });
+        },
+      }),
+    },
   });
 
   return result.toUIMessageStreamResponse({
